@@ -1,93 +1,132 @@
-# Batman: Gotham Nights — Cuphead-style 2D Platformer
+# Batman: Gotham Nights — Plataforma 2D estilo Cuphead
 
-A retro run-and-gun platformer and boss-rush game built with pure **HTML5 Canvas 2D procedural rendering** (no external sprite image assets) and strict **Object-Oriented Programming (OOP)**.
-
----
-
-## 🎮 Game Overview
-
-- **Genre**: Run-and-Gun Platformer / Boss Rush (Cuphead style)
-- **Player**: Batman (Arkham-style armored suit, glowing white eyes, dynamic animated cape, gauntlet fins, yellow utility belt)
-- **Lives**: 5 Bat-Lives per playthrough (3 HP per life)
-- **Combat**: Aim and throw high-speed Batarangs with mouse or keyboard, dash past hazards, dodge enemy projectiles
-- **Progression**: 3 sequential stages featuring enemy waves followed by intense boss showdowns
+Um jogo retrô de plataforma run-and-gun (correr e atirar) e boss-rush construído com pura **renderização procedural em HTML5 Canvas 2D** (sem assets de imagens sprite externas) e estrita **Programação Orientada a Objetos (POO)**.
 
 ---
 
-## 🦇 Stages & Bosses
+## 📑 Índice
 
-### 1. Level 1 — Gotham Rooftops
-- **Atmosphere**: Dark rainy night sky, dynamic thunderstorm flashes, distant Gotham skyscraper silhouettes, and the glowing Bat-Signal projected onto the clouds.
-- **Common Enemy**: **Joker** (throws arcing chattering wind-up dentures, 15 kills required).
-- **Boss**: **Scarecrow** (100 HP)
-  - Attacks: Drifting **FearSmoke** toxins, arcing explosive **GasBombs**.
-  - Special: **Fear Aura** every 20 seconds, temporarily reversing Batman's controls for 3 seconds.
-
-### 2. Level 2 — Iceberg Lounge
-- **Atmosphere**: Opulent art-deco casino interior, velvet drapery, crystal chandeliers, neon signs, and marble floor reflections.
-- **Common Enemy**: **Penguin Grunts** (waddling mobsters firing purple energy beams from umbrellas, 15 kills required).
-- **Boss**: **Harley Quinn** (120 HP)
-  - Attacks: Rapid-fire handgun **Bullets**, boomerang **Mallet tosses**, and high-speed **Cartwheel dashes**.
-  - Special: Fires a triple-spread bullet barrage when below 50% HP.
-
-### 3. Level 3 — Arkham Asylum
-- **Atmosphere**: Gothic stone prison walls, heavy iron cell bars with glowing inmate eyes, flickering fluorescent tubes, perched gargoyles, and creeping toxic green fog.
-- **Common Enemy**: **Penguins** (elite variants, 10 kills required).
-- **Boss**: **Two-Face** (150 HP)
-  - Attacks: Heavy pistol **Bullets**, bouncing **Scarred Coins**, and V-spread gunfire.
-  - Special: Flips a silver dollar overhead before attacking — Heads triggers rapid bullets, Tails triggers bouncing coins.
+- [🎮 Visão Geral do Jogo](#-visão-geral-do-jogo)
+- [🦇 Fases e Chefes](#-fases-e-chefes)
+  - [1. Nível 1 — Telhados de Gotham](#1-nível-1--telhados-de-gotham)
+  - [2. Nível 2 — Iceberg Lounge](#2-nível-2--iceberg-lounge)
+  - [3. Nível 3 — Asilo Arkham](#3-nível-3--asilo-arkham)
+- [🕹️ Controles](#️-controles)
+- [🏗️ Arquitetura e Hierarquia de Classes POO](#️-arquitetura-e-hierarquia-de-classes-poo)
+- [🎨 Sistemas Visuais e de Áudio Procedurais](#-sistemas-visuais-e-de-áudio-procedurais)
+- [🚀 Como Executar](#-como-executar)
+- [📄 Licença](#-licença)
 
 ---
 
-## 🕹️ Controls
+## 🎮 Visão Geral do Jogo
 
-| Action | Primary Key | Secondary / Mouse |
+| Característica | Descrição |
+|---|---|
+| **Gênero** | Plataforma Run-and-Gun / Boss Rush (estilo Cuphead) |
+| **Jogador** | Batman (traje blindado estilo Arkham, olhos brancos brilhantes, capa animada dinâmica, barbatanas nas manoplas, cinto de utilidades amarelo) |
+| **Vidas** | 5 Bat-Vidas por jogada (3 HP por vida) |
+| **Combate** | Mire e lance Batarangues em alta velocidade com o mouse ou teclado, avance rapidamente pelos perigos, desvie de projéteis inimigos |
+| **Progressão** | 3 fases sequenciais apresentando ondas de inimigos seguidas por confrontos intensos contra chefes |
+
+---
+
+## 🦇 Fases e Chefes
+
+### 1. Nível 1 — Telhados de Gotham
+
+> **Atmosfera:** Céu noturno escuro e chuvoso, clarões dinâmicos de tempestade, silhuetas distantes de arranha-céus de Gotham e o brilhante Bat-Sinal projetado nas nuvens.
+
+| Elemento | Detalhes |
+|---|---|
+| **Inimigo Comum** | **Coringa** — lança dentaduras de corda tagarelas em arco (necessário abater 15) |
+| **Chefe** | **Espantalho** — 100 HP |
+| **Ataques do Chefe** | Toxinas **FearSmoke** (Fumaça do Medo) à deriva; **GasBombs** (Bombas de Gás) explosivas em arco |
+| **Especial** | **Aura de Medo** a cada 20 segundos, invertendo temporariamente os controles do Batman por 3 segundos |
+
+### 2. Nível 2 — Iceberg Lounge
+
+> **Atmosfera:** Interior opulento de cassino art-déco, cortinas de veludo, lustres de cristal, letreiros de neon e reflexos no chão de mármore.
+
+| Elemento | Detalhes |
+|---|---|
+| **Inimigo Comum** | **Capangas do Pinguim** — mafiosos cambaleantes que atiram raios de energia roxa de guarda-chuvas (necessário abater 15) |
+| **Chefe** | **Arlequina** — 120 HP |
+| **Ataques do Chefe** | **Balas** de pistola em tiro rápido; **Lançamentos de Marreta** bumerangue; **Investidas de Estrela** (Cartwheel) em alta velocidade |
+| **Especial** | Dispara uma barragem de balas com propagação tripla quando o HP está abaixo de 50% |
+
+### 3. Nível 3 — Asilo Arkham
+
+> **Atmosfera:** Paredes góticas de prisão de pedra, grades pesadas de celas de ferro com olhos brilhantes de detentos, tubos fluorescentes piscando, gárgulas empoleiradas e uma névoa verde tóxica rastejante.
+
+| Elemento | Detalhes |
+|---|---|
+| **Inimigo Comum** | **Pinguins** — variantes de elite (necessário abater 10) |
+| **Chefe** | **Duas-Caras** — 150 HP |
+| **Ataques do Chefe** | **Balas** de pistola pesada; **Moedas Marcadas** saltitantes; tiros em formato de V |
+| **Especial** | Joga um dólar de prata para o alto antes de atacar — **Cara** aciona balas rápidas, **Coroa** aciona moedas saltitantes |
+
+---
+
+## 🕹️ Controles
+
+| Ação | Tecla Primária | Secundária / Mouse |
 |---|---|---|
-| **Move Left / Right** | `A` / `D` | `←` / `→` |
-| **Jump** | `W` / `Space` | `↑` |
-| **Batarang** | `Left Click` (Aim / Hold Rapid Fire) | `X` / `Z` |
-| **Start / Restart** | `Space` / `Enter` | `Enter` / `Click` |
-| **Mute / Unmute** | `M` | HUD Icon |
+| **Mover Esquerda / Direita** | `A` / `D` | `←` / `→` |
+| **Pular** | `W` / `Espaço` | `↑` |
+| **Batarangue** | `Clique Esquerdo` (Mirar / Segurar para Tiro Rápido) | `X` / `Z` |
+| **Iniciar / Reiniciar** | `Espaço` / `Enter` | `Enter` / `Clique` |
+| **Mutar / Desmutar** | `M` | Ícone na HUD |
 
 ---
 
-## 🏗️ Architecture & OOP Class Hierarchy
 
-```
-Entity (base class: x, y, w, h, vx, vy, bounds, intersects, update, draw)
-├── Character (abstract: hp, maxHp, facing, hurtFlash, invulnerable)
-│   ├── Batman (player: lives, fearTimer, batarang cooldown, cape physics)
-│   └── Villains
-│       ├── Joker (common enemy L1: laugh, teeth chatter)
-│       ├── Scarecrow (boss L1: fear drone, toxic hiss, gas bomb)
-│       ├── Penguin (grunt L2 / L3: umbrella laser blast)
-│       ├── HarleyQuinn (boss L2: gunshots, mallet throws)
-│       └── TwoFace (boss L3: coin ping, dual gunfire)
-│
-├── Platform (static collision surfaces with themed procedural textures)
-│
-└── Projectile (abstract: vx, vy, damage, lifetime, owner, spin)
-    ├── Batarang (Batman player projectile)
-    ├── JokerTeeth (arced chattering dentures)
-    ├── FearSmoke (drifting toxic cloud)
-    ├── GasBomb (burlap explosive canister)
-    ├── UmbrellaBurst (purple energy beam)
-    ├── PenguinBomb (mechanical ticking minion)
-    ├── Bullet (Harley Quinn & Two-Face firearm shot)
-    └── Coin (Two-Face bouncing scarred silver dollar)
+
+  # Como baixar e executar Batman: Gotham Nights
+
+## Requisitos
+
+- Git instalado
+- Node.js instalado
+- npm (incluído na instalação do Node.js)
+
+## Baixar o jogo
+
+Abra o terminal ou o PowerShell na pasta onde deseja guardar o projeto e execute:
+
+```bash
+git clone https://github.com/felipenono/batman_-gotham-nights.git
+cd batman_-gotham-nights
 ```
 
----
+O comando `git clone` baixa os arquivos do repositório e cria a pasta
+`batman_-gotham-nights`.
 
-## 🎨 Procedural Visual & Audio Systems
+## Instalar dependências e iniciar
 
-- **Procedural Canvas Rendering**: 100% vector paths, linear/radial gradients, and arcs matching reference sprites without any external PNG/JPG downloads.
-- **Gotham Orchestral Soundtrack (Web Audio API)**:
-  - **Batman Theme**: Driving D Minor gothic ostinato, pulsating bassline, orchestral timpani, cathedral bells, and iconic brass fanfare motif inspired by Danny Elfman / The Dark Knight.
-  - **Dynamic State Shifts**: Brooding ambient menu theme, intense accelerated boss combat battle theme, tragic minor funeral drone on Game Over, and victorious D major brass fanfare.
-- **Rogue Gallery Enemy Sound Effects**:
-  - **Joker**: Maniacal high-pitched laughter arpeggio and rapid mechanical teeth chatter clicks.
-  - **Scarecrow**: Filtered toxic gas hiss, resonant psycho-acoustic fear aura drone, and bomb blast rumble.
-  - **Penguin**: Resonant umbrella electric beam zap and waddle cadence.
-  - **Harley Quinn**: Handgun gunfire and mallet swings.
-  - **Two-Face**: High-pitched metallic coin ping chime (2.5 kHz) and heavy pistol gunshots.
+Dentro da pasta do projeto, execute:
+
+```bash
+npm install
+npm run dev
+```
+
+Abra no navegador o endereço que o Vite mostrar no terminal
+(normalmente `http://localhost:3000`).
+
+## Atualizar uma cópia já baixada
+
+Para obter as alterações mais recentes, primeiro entre na pasta do projeto e
+depois execute:
+
+```bash
+git pull
+npm install
+```
+
+Em seguida, inicie novamente o jogo com:
+
+```bash
+npm run dev
+```
+
