@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Batman: Gotham Nights</title>
+    <meta
+      name="description"
+      content="Cuphead-style 2D platformer boss-rush featuring Batman battling Joker, Scarecrow, Penguin, Harley Quinn, and Two-Face across Gotham."
+    />
+    <meta property="og:title" content="Batman: Gotham Nights" />
+    <meta
+      property="og:description"
+      content="Cuphead-style 2D platformer boss-rush featuring Batman battling Joker, Scarecrow, Penguin, Harley Quinn, and Two-Face across Gotham."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+      }
+
+      body {
+        background-color: #050811;
+        color: #f1f5f9;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        overflow: hidden;
+        background-image:
+          radial-gradient(circle at 50% 20%, rgba(30, 27, 75, 0.6) 0%, transparent 70%),
+          radial-gradient(circle at 80% 80%, rgba(15, 23, 42, 0.8) 0%, #030712 100%);
+      }
+
+      .game-wrapper {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 960px;
+        padding: 8px 12px;
+      }
+
+      .arcade-cabinet {
+        position: relative;
+        background: #0f172a;
+        padding: 10px;
+        border-radius: 12px;
+        box-shadow:
+          0 0 0 2px #334155,
+          0 0 20px rgba(0, 0, 0, 0.8),
+          0 0 35px rgba(234, 179, 8, 0.15);
+      }
+
+      #game-canvas {
+        display: block;
+        width: 100%;
+        max-width: 900px;
+        height: auto;
+        aspect-ratio: 900 / 500;
+        background-color: #000000;
+        border-radius: 6px;
+        cursor: crosshair;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.9);
+      }
+
+      .footer-controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 10px;
+        font-size: 13px;
+        color: #94a3b8;
+      }
+
+      .key-badge {
+        display: inline-block;
+        background: #1e293b;
+        color: #facc15;
+        border: 1px solid #475569;
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-family: monospace;
+        font-weight: bold;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+      }
+
+      .status-pill {
+        color: #cbd5e1;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      @media (max-width: 640px) {
+        .footer-controls {
+          font-size: 11px;
+          gap: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game-wrapper">
+      <div class="arcade-cabinet">
+        <canvas id="game-canvas" width="900" height="500"></canvas>
+      </div>
+
+      <div class="footer-controls">
+        <div class="status-pill">
+          <span class="key-badge">A</span> <span class="key-badge">D</span> / <span class="key-badge">←</span> <span class="key-badge">→</span> Move
+        </div>
+        <div class="status-pill">
+          <span class="key-badge">W</span> / <span class="key-badge">SPACE</span> Jump
+        </div>
+        <div class="status-pill">
+          <span class="key-badge">CLICK</span> / <span class="key-badge">X</span> Batarang (Hold to Rapid Fire)
+        </div>
+        <div class="status-pill">
+          <span class="key-badge">M</span> Audio Toggle
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
