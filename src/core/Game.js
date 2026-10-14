@@ -1,3 +1,4 @@
+import { Viewport } from './Viewport.js';
 /**
  * ============================================================================
  * @file Game.js
@@ -27,7 +28,7 @@
  * ============================================================================
  */
 
-import { GAME, KEYS } from '../utils/constants.js';
+import { GAME } from '../utils/constants.js';
 import { GameState } from './GameState.js';
 import { Input } from './Input.js';
 import { Mouse } from './Mouse.js';
@@ -41,6 +42,8 @@ import { BossManager } from '../systems/BossManager.js';
 import { LevelManager } from '../systems/LevelManager.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../systems/HUD.js';
+import { ScreenUI } from '../systems/ScreenUI.js';
+import { drawBatCrest } from '../utils/batSymbols.js';
 
 export class Game {
   /**
@@ -51,6 +54,9 @@ export class Game {
    */
   constructor(canvas) {
     this.canvas = canvas;
+    canvas.width = GAME.RENDER_WIDTH;
+    canvas.height = GAME.RENDER_HEIGHT;
+    this.viewport = new Viewport();
     this.ctx = canvas.getContext('2d');
     this.width = GAME.WIDTH;
     this.height = GAME.HEIGHT;
@@ -76,6 +82,8 @@ export class Game {
     this.player = null;          // Instância de Batman (Character)
     this.enemies = [];           // Array de instâncias polimórficas de Character (Joker, Penguin)
     this.projectiles = [];       // Array de instâncias polimórficas de Projectile (Batarang, Teeth, etc.)
+    this.deathEffects = [];
+    this.screenUI = new ScreenUI(this, globalThis.document?.getElementById('screen-ui'));
     this.currentLevel = null;    // Instância de Level (Mundo e plataformas)
 
     // Menu and screen timers
@@ -103,6 +111,8 @@ export class Game {
   }
 
   restartGame() {
+    this.deathEffects = [];
+    this.input._onBlur();this.mouse._onBlur();
     this.gameOverCooldown = 0;
     this.player = null;
     this.enemies = [];
@@ -145,6 +155,7 @@ export class Game {
     }
 
     this._render();
+    this.screenUI.update();
     requestAnimationFrame(this._loop);
   }
 
@@ -180,31 +191,17 @@ export class Game {
 
       case GameState.GAME_OVER:
       case GameState.VICTORY:
-        if (this.gameOverCooldown > 0) {
-          this.gameOverCooldown -= dt;
-          break;
-        }
-        if (
-          this.input.anyKeyPressed ||
-          this.mouse.justClicked ||
-          this.mouse.isDown ||
-          this.input.isKeyJustPressed('Enter') ||
-          this.input.justPressed('START') ||
-          this.input.isKeyJustPressed(' ') ||
-          this.input.isKeyJustPressed('r') ||
-          this.input.isKeyJustPressed('R') ||
-          this.input.isKeyJustPressed('x') ||
-          this.input.isKeyJustPressed('X') ||
-          this.input.isKeyJustPressed('z') ||
-          this.input.isKeyJustPressed('Z')
-        ) {
-          this.restartGame();
-        }
+        if (this.gameOverCooldown > 0) { this.gameOverCooldown -= dt; break; }
+        if (this.input.isKeyJustPressed('Escape')) {
+          this.state = GameState.MENU; this.soundManager.setTrack('menu');
+        } else if (this.input.justPressed('START')) this.restartGame();
         break;
     }
   }
 
   _updatePlaying(dt) {
+    for (const effect of this.deathEffects) { effect.remaining -= dt; effect.actor.animator.update(effect.actor, dt); }
+    this.deathEffects = this.deathEffects.filter(effect => effect.remaining > 0);
     // 1. Player input & movement
     this.player.handleInput(this.input, this.mouse, this.projectiles, (x, y, vx, vy) => {
       this.playSound('throw');
@@ -288,6 +285,11 @@ export class Game {
       } else {
         this.state = GameState.LEVEL_TRANSITION;
       }
+    }, () => {
+      this.projectiles = [];
+      this.enemies = [];
+      this.camera.shake(8, 12);
+      this.playSound('boss_enter');
     });
 
     // 5. Update Common Enemies
@@ -324,6 +326,7 @@ export class Game {
       this.bossManager.boss,
       this.projectiles,
       (deadFoe) => {
+        this.deathEffects.push({actor:deadFoe,remaining:GAME.DEATH_ANIMATION_FRAMES});
         this.playSound('kill');
         if (!deadFoe.isBoss) {
           this.spawner.recordKill();
@@ -337,7 +340,14 @@ export class Game {
   }
 
   _render() {
-    this.ctx.clearRect(0, 0, this.width, this.height);
+    const view = this.viewport.fit(this.canvas.width, this.canvas.height);
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.fillStyle = '#03060c';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.setTransform(view.scale, 0, 0, view.scale, view.x, view.y);
+    this.ctx.imageSmoothingEnabled = false;
+    this.ctx.save();
+    this.ctx.beginPath();this.ctx.rect(0,0,this.width,this.height);this.ctx.clip();
 
     switch (this.state) {
       case GameState.MENU:
@@ -360,6 +370,7 @@ export class Game {
         this._renderVictory();
         break;
     }
+    this.ctx.restore();
   }
 
   _renderPlaying() {
@@ -373,13 +384,15 @@ export class Game {
     this.ctx.save();
     this.ctx.translate(-camX, -camY);
 
+    for (const effect of this.deathEffects) effect.actor.draw(this.ctx);
+
     // Common enemies
     for (const enemy of this.enemies) {
-      enemy.draw(this.ctx);
+      if (enemy.alive) enemy.draw(this.ctx);
     }
 
     // Boss
-    if (this.bossManager.boss) {
+    if (this.bossManager.boss?.alive) {
       this.bossManager.boss.draw(this.ctx);
     }
 
@@ -408,172 +421,26 @@ export class Game {
       this.bossManager.boss,
       this.width,
       this.height,
-      this.soundManager ? this.soundManager.isMuted : false
+      this.soundManager ? this.soundManager.isMuted : false,
+      Batarang.available(this.projectiles)
     );
   }
 
   _renderMenu() {
-    // Gothic animated title screen
-    const grad = this.ctx.createLinearGradient(0, 0, 0, this.height);
-    grad.addColorStop(0, '#020617');
-    grad.addColorStop(0.5, '#0f172a');
-    grad.addColorStop(1, '#1e1b4b');
-    this.ctx.fillStyle = grad;
-    this.ctx.fillRect(0, 0, this.width, this.height);
-
-    // Giant Bat-Symbol in center background
-    this.ctx.save();
-    this.ctx.translate(this.width / 2, this.height / 2 - 30);
-    this.ctx.scale(8, 8);
-    this.ctx.fillStyle = '#0f172a';
-    this.ctx.shadowColor = '#facc15';
-    this.ctx.shadowBlur = 25;
-    this.ctx.beginPath();
-    this.ctx.moveTo(0, 5);
-    this.ctx.lineTo(8, 2);
-    this.ctx.lineTo(14, -6);
-    this.ctx.lineTo(6, -2);
-    this.ctx.lineTo(2, -7);
-    this.ctx.lineTo(0, -4);
-    this.ctx.lineTo(-2, -7);
-    this.ctx.lineTo(-6, -2);
-    this.ctx.lineTo(-14, -6);
-    this.ctx.lineTo(-8, 2);
-    this.ctx.closePath();
-    this.ctx.fill();
-    this.ctx.restore();
-
-    // Vintage Cuphead Gotham Nights title typography
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-
-    this.ctx.font = '900 44px "Arial Black", Impact, sans-serif';
-    this.ctx.fillStyle = '#fef08a';
-    this.ctx.shadowColor = '#ca8a04';
-    this.ctx.shadowBlur = 16;
-    this.ctx.fillText('BATMAN: GOTHAM NIGHTS', this.width / 2, this.height / 2 - 40);
-
-    this.ctx.shadowBlur = 0;
-    this.ctx.font = '700 18px "Courier New", monospace';
-    this.ctx.fillStyle = '#94a3b8';
-    this.ctx.letterSpacing = '3px';
-    this.ctx.fillText('A CUPHEAD-STYLE 2D BOSS-RUSH PLATFORMER', this.width / 2, this.height / 2 + 10);
-
-    // Press SPACE to start (pulsing)
-    const pulse = Math.sin(this.menuAnimTime * 4) * 0.5 + 0.5;
-    this.ctx.font = '900 20px "Arial Black", sans-serif';
-    this.ctx.fillStyle = pulse > 0.4 ? '#fbbf24' : '#e2e8f0';
-    this.ctx.shadowColor = '#f59e0b';
-    this.ctx.shadowBlur = pulse * 10;
-    this.ctx.fillText('PRESS SPACE TO START', this.width / 2, this.height / 2 + 80);
-
-    // Controls hints footer
-    this.ctx.shadowBlur = 0;
-    this.ctx.font = '600 14px sans-serif';
-    this.ctx.fillStyle = '#64748b';
-    this.ctx.fillText('A / D or ARROWS: Move   •   W / SPACE: Jump   •   MOUSE CLICK / X: Batarang (Hold for Rapid Fire)', this.width / 2, this.height - 35);
+    const ctx = this.ctx;
+    ctx.fillStyle = '#080d17'; ctx.fillRect(0, 0, this.width, this.height);
+    drawBatCrest(ctx, this.width / 2, 160, 350);
   }
 
-  _renderLevelTransition() {
-    this.levelManager.drawTransition(this.ctx, this.width, this.height);
-  }
+  _renderLevelTransition() { this.levelManager.drawTransition(this.ctx, this.width, this.height); }
 
   _renderGameOver() {
-    // Red dark vignette
-    this.ctx.fillStyle = '#090306';
-    this.ctx.fillRect(0, 0, this.width, this.height);
-
-    const radGrad = this.ctx.createRadialGradient(
-      this.width / 2,
-      this.height / 2,
-      80,
-      this.width / 2,
-      this.height / 2,
-      360
-    );
-    radGrad.addColorStop(0, 'rgba(153, 27, 27, 0.45)');
-    radGrad.addColorStop(1, 'rgba(0, 0, 0, 0.95)');
-    this.ctx.fillStyle = radGrad;
-    this.ctx.fillRect(0, 0, this.width, this.height);
-
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-
-    // Large GAME OVER in white with red glow
-    this.ctx.font = '900 60px "Arial Black", Impact, sans-serif';
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.shadowColor = '#ef4444';
-    this.ctx.shadowBlur = 24;
-    this.ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 50);
-
-    this.ctx.shadowBlur = 0;
-    this.ctx.font = '700 20px "Courier New", monospace';
-    this.ctx.fillStyle = '#f87171';
-    this.ctx.fillText(`TOTAL KILLS: ${this.spawner.totalKills}`, this.width / 2, this.height / 2 + 10);
-
-    // Interactive arcade restart button box
-    const btnW = 380;
-    const btnH = 50;
-    const btnX = this.width / 2 - btnW / 2;
-    const btnY = this.height / 2 + 55;
-
-    const pulse = Math.sin(this.menuAnimTime * 5) * 0.5 + 0.5;
-    this.ctx.fillStyle = '#1e1b4b';
-    this.ctx.strokeStyle = pulse > 0.4 ? '#facc15' : '#eab308';
-    this.ctx.lineWidth = 2.5;
-    this.ctx.shadowColor = '#f59e0b';
-    this.ctx.shadowBlur = pulse * 14;
-
-    this.ctx.beginPath();
-    this.ctx.roundRect(btnX, btnY, btnW, btnH, 8);
-    this.ctx.fill();
-    this.ctx.stroke();
-
-    this.ctx.font = '900 17px "Arial Black", sans-serif';
-    this.ctx.fillStyle = pulse > 0.4 ? '#fef08a' : '#ffffff';
-    this.ctx.shadowBlur = 0;
-    this.ctx.fillText('CLICK OR PRESS ANY KEY TO RESTART', this.width / 2, btnY + btnH / 2);
+    this.ctx.fillStyle = '#120a10'; this.ctx.fillRect(0, 0, this.width, this.height);
+    drawBatCrest(this.ctx, this.width / 2, 105, 160);
   }
 
   _renderVictory() {
-    // Bat-Signal glowing in triumph
-    this.ctx.fillStyle = '#020617';
-    this.ctx.fillRect(0, 0, this.width, this.height);
-
-    const skyGrad = this.ctx.createRadialGradient(
-      this.width / 2,
-      this.height / 2 - 30,
-      30,
-      this.width / 2,
-      this.height / 2 - 30,
-      300
-    );
-    skyGrad.addColorStop(0, 'rgba(254, 240, 138, 0.55)');
-    skyGrad.addColorStop(0.5, 'rgba(234, 179, 8, 0.15)');
-    skyGrad.addColorStop(1, 'rgba(2, 6, 23, 0)');
-    this.ctx.fillStyle = skyGrad;
-    this.ctx.fillRect(0, 0, this.width, this.height);
-
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-
-    this.ctx.font = '900 56px "Arial Black", Impact, sans-serif';
-    this.ctx.fillStyle = '#fef08a';
-    this.ctx.shadowColor = '#ca8a04';
-    this.ctx.shadowBlur = 25;
-    this.ctx.fillText('GOTHAM IS SAFE', this.width / 2, this.height / 2 - 50);
-
-    this.ctx.shadowBlur = 0;
-    this.ctx.font = '700 20px "Trebuchet MS", sans-serif';
-    this.ctx.fillStyle = '#cbd5e1';
-    this.ctx.fillText(
-      `All Rogues Apprehended • Total Villains Defeated: ${this.spawner.totalKills}`,
-      this.width / 2,
-      this.height / 2 + 15
-    );
-
-    this.ctx.font = '900 18px "Arial Black", sans-serif';
-    this.ctx.fillStyle = '#facc15';
-    this.ctx.fillText('PRESS ENTER, SPACE OR CLICK TO PLAY AGAIN', this.width / 2, this.height / 2 + 75);
+    this.ctx.fillStyle = '#08151c'; this.ctx.fillRect(0, 0, this.width, this.height);
+    drawBatCrest(this.ctx, this.width / 2, 105, 160);
   }
 }

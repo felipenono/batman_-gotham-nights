@@ -151,9 +151,13 @@ export class Level {
       this.background.draw(ctx, camera);
     }
 
-    // Draw platforms
+    // Platforms share the exact world transform used by characters and projectiles.
+    ctx.save();
+    ctx.translate(-(camera?.renderX ?? 0), -(camera?.renderY ?? 0));
     for (const plat of this.platforms) {
       plat.draw(ctx);
     }
+    this.background?.drawSurfaceLighting?.(ctx, this.platforms);
+    ctx.restore();
   }
 }

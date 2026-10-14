@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<title>Verificação — Gotham Nights</title>
+<style>body{background:#070d18;color:#e2e8f0;font:15px system-ui;margin:20px}button{padding:9px;margin:4px;background:#23334e;color:white;border:1px solid #64748b;border-radius:4px}canvas{display:block;max-width:100%;border:1px solid #eab308;margin-top:12px}pre{white-space:pre-wrap}</style>
+<h1>Batman: verificações no navegador</h1>
+<button id="verify">Executar verificações</button>
+<button id="phase1">Fase 1</button><button id="phase2">Fase 2</button><button id="phase3">Fase 3</button>
+<button id="lights">Ligar/desligar luminárias</button>
+<button id="jokerboss">Coringa (chefe)</button><button id="scarecrowboss">Espantalho (chefe)</button><button id="step">Avançar 120 quadros</button><button id="animate">Animar combate</button><p id="details"></p>
+<canvas id="game-canvas" width="1920" height="1080"></canvas>
+<pre id="results">Pronto. As cenas ficam pausadas para inspeção.</pre>
+<script type="module">
+import {loadSprites} from '../src/utils/SpriteAnimator.js';
+await loadSprites();
+import {Game} from '../src/core/Game.js';
+import {Batarang} from '../src/entities/projectiles/Batarang.js';
+import {Penguin} from '../src/entities/villains/Penguin.js';
+import {PROJECTILE} from '../src/utils/constants.js';
+const canvas=document.querySelector('canvas'), results=document.querySelector('#results');
+const game=new Game(canvas);
+function bossScene(type) {
+ scene(1);game.bossManager.spawnBoss({...game.levelManager.currentLevelConfig,bosses:[type]},1100,500);game.bossManager.introTimer=0;game._render();describe();
+}
+function describe(){const boss=game.bossManager.boss;document.querySelector('#details').textContent='Canvas: '+canvas.width+' × '+canvas.height+(boss?' | Chefe: '+boss.name+' | x: '+boss.x.toFixed(1)+' | animação: '+boss.animator.state:'');}
+let playing=false;
+document.querySelector('#jokerboss').onclick=()=>bossScene('Joker');
+document.querySelector('#scarecrowboss').onclick=()=>bossScene('Scarecrow');
+document.querySelector('#step').onclick=()=>{for(let i=0;i<120;i++)game._update(1);game._render();describe();};
+document.querySelector('#animate').onclick=()=>{playing=!playing;document.querySelector('#animate').textContent=playing?'Pausar combate':'Animar combate';};
+let last=0,accumulator=0;
+function loop(time){accumulator+=Math.min(100,time-last);last=time;while(accumulator>1000/60){if(playing)game._update(1);accumulator-=1000/60;}if(playing){game._render();describe();}requestAnimationFrame(loop);}requestAnimationFrame(loop);
+const key=(type,repeat=false)=>window.dispatchEvent(new KeyboardEvent(type,{key:'x',repeat,bubbles:true}));
+const mouse=type=>{const r=canvas.getBoundingClientRect();canvas.dispatchEvent(new MouseEvent(type,{button:0,clientX:r.left+r.width*0.95,clientY:r.top+r.height*0.6,bubbles:true}));};
+function scene(index) {
+  game.restartGame();game.initLevel(index);game.spawner.timer=100000;
+  game.player.x=560;game.player.y=368;game.player.invulnerable=99999;game.player.hurtFlash=0;
+  game.camera.x=120;game.camera.y=0;
+  game.input._onBlur();game.mouse._onBlur();
+  if(index===3)game.currentLevel.background.flickerTimer=0;
+  game._render();
+}
+for(let i=1;i<=3;i++)document.querySelector('#phase'+i).onclick=()=>{
+ scene(i);game.spawner.spawnWave(game.enemies,game.currentLevel.width,500);
+ game.enemies.forEach((enemy,n)=>{enemy.x=230+n*270;enemy.y=440-enemy.h;enemy.onGround=true;enemy.update();});
+ game.bossManager.spawnBoss(game.levelManager.currentLevelConfig,1050,500);game.bossManager.introTimer=0;
+ const penguin=game.enemies.find(e=>e instanceof Penguin);if(penguin)penguin.firePenguin(game.player,game.projectiles);
+ game._render();
+};
+document.querySelector('#lights').onclick=()=>{
+  const lights=game.currentLevel.background.lights;
+  if(lights)for(const light of lights)light.enabled=!light.enabled;
+  game._render();
+};
+document.querySelector('#verify').onclick=()=>{
+  const checks=[];
+  const check=(condition,message)=>{if(!condition)throw Error(message);checks.push('PASSOU: '+message);};
+  try {
+    scene(1);
+    check(canvas.width===1920&&canvas.height===1080,'Canvas em 1920 × 1080');
+    window.dispatchEvent(new KeyboardEvent('keydown',{key:'D',code:'KeyD',bubbles:true}));game._update(1);
+    check(game.player.vx===game.player.speed,'andar responde na primeira atualização');
+    window.dispatchEvent(new KeyboardEvent('keyup',{key:'d',code:'KeyD',bubbles:true}));game._update(1);
+    check(game.player.vx===0,'soltar a tecla interrompe o movimento, inclusive ao mudar maiúscula/minúscula');
+    window.dispatchEvent(new KeyboardEvent('keydown',{key:'w',code:'KeyW',bubbles:true}));game._update(1);
+    check(game.player.vy<0,'pulo responde ao pressionamento');
+    window.dispatchEvent(new Event('blur'));game._update(1);
+    check(!game.input.anyKeyDown&&!game.mouse.isDown,'perda de foco limpa controles');
+    scene(1);
+    let throws=0;game.playSound=type=>{if(type==='throw')throws++;};
+    mouse('mousedown');game._update(1);
+    for(let i=0;i<200;i++)game._update(1);
+    check(throws===1,'segurar mouse por 200 atualizações gera somente um disparo');
+    mouse('mouseup');mouse('mousedown');game._update(1);mouse('mouseup');
+    check(throws===2,'novo clique gera novo disparo');
+    scene(1);throws=0;key('keydown');game._update(1);
+    for(let i=0;i<200;i++){key('keydown',true);game._update(1);}
+    check(throws===1,'segurar X com repetição automática gera somente um disparo');key('keyup');
+    scene(1);throws=0;
+    game.projectiles=Array.from({length:5},()=>new Batarang(500,100,0,0));
+    mouse('mousedown');game._update(1);mouse('mouseup');
+    check(throws===0&&Batarang.available(game.projectiles)===0,'limite de cinco bloqueia novo disparo');
+    game.projectiles[0].alive=false;
+    for(let i=0;i<20;i++)game._update(1);
+    check(throws===0&&Batarang.available(game.projectiles)===1,'vaga liberada sem disparo acumulado');
+    mouse('mousedown');game._update(1);mouse('mouseup');check(throws===1,'novo clique usa a vaga liberada');
+    for(const phase of [1,2,3]) {
+      scene(phase);game.player.x=450;game.player.y=30;
+      for(let i=0;i<200;i++)game._update(1);
+      check(game.player.onGround&&game.currentLevel.platforms.some(p=>Math.abs(p.y-game.player.y-game.player.h)<0.001),'pouso e colisão na fase '+phase);
+      const x=game.camera.x;for(let i=0;i<60;i++)game._update(1);
+      check(Math.abs(game.camera.x-x)<0.01,'câmera estabilizada na fase '+phase);
+      game._render();
+      const oldPlayerX=game.player.x, oldCameraX=game.camera.x;
+      window.dispatchEvent(new KeyboardEvent('keydown',{key:'d',bubbles:true}));
+      for(let i=0;i<30;i++)game._update(1);
+      window.dispatchEvent(new KeyboardEvent('keyup',{key:'d',bubbles:true}));
+      check(game.player.x>oldPlayerX&&game.camera.x>oldCameraX,'movimento do jogador e da câmera na fase '+phase);
+    }
+    for(const phase of [2,3]) {
+      scene(phase);const enemy=new Penguin({x:50,y:300});game.player.y=50;
+      enemy.firePenguin(game.player,game.projectiles);const p=game.projectiles[0];let angle=Math.atan2(p.vy,p.vx);
+      for(let i=0;i<60;i++){
+        p.update();const next=Math.atan2(p.vy,p.vx);
+        if(Math.abs(next-angle)>PROJECTILE.UMBRELLA_TURN_RATE+1e-9)throw Error('Giro excessivo');
+        angle=next;
+      }
+      check(p.vy!==0,'perseguição com giro limitado na fase '+phase);
+      const v=[p.vx,p.vy];game.player.y=490;p.update();
+      check(p.vx===v[0]&&p.vy===v[1],'perseguição termina após um segundo na fase '+phase);
+    }
+    for(const type of ['Joker','Scarecrow']) {
+      bossScene(type);const boss=game.bossManager.boss,startX=boss.x;let walked=false,attacked=false;
+      for(let i=0;i<120;i++){game._update(1);walked ||= boss.animator.state==='walk';attacked ||= game.projectiles.some(p=>p.owner==='villain');}
+      check(boss.x<startX&&walked,'chefão '+boss.name+' se desloca e anima os passos');
+      check(attacked,'chefão '+boss.name+' executa seus ataques');
+    }
+    scene(3);const bg=game.currentLevel.background;
+    bg.lights.forEach(l=>l.enabled=false);game._render();
+    check(bg.lights.every(l=>bg.lightIntensity(l)===0),'luzes desligadas sem emissão');
+    scene(3);describe();
+    results.textContent=checks.join('\n')+'\nTodas as verificações passaram.';
+  } catch(error) {results.textContent=checks.join('\n')+'\nFALHOU: '+error.stack;}
+};
+scene(3);
+</script>
+</html>

@@ -1,17 +1,17 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Batman: Gotham Nights</title>
+    <title>Batman: Noites de Gotham</title>
     <meta
       name="description"
-      content="Cuphead-style 2D platformer boss-rush featuring Batman battling Joker, Scarecrow, Penguin, Harley Quinn, and Two-Face across Gotham."
+      content="Jogo de ação e plataformas: enfrente Coringa, Espantalho, Pinguim, Arlequina e Duas-Caras em Gotham."
     />
-    <meta property="og:title" content="Batman: Gotham Nights" />
+    <meta property="og:title" content="Batman: Noites de Gotham" />
     <meta
       property="og:description"
-      content="Cuphead-style 2D platformer boss-rush featuring Batman battling Joker, Scarecrow, Penguin, Harley Quinn, and Two-Face across Gotham."
+      content="Jogo de ação e plataformas: enfrente Coringa, Espantalho, Pinguim, Arlequina e Duas-Caras em Gotham."
     />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -45,11 +45,12 @@
         flex-direction: column;
         align-items: center;
         width: 100%;
-        max-width: 960px;
+        max-width: min(1964px, calc((100vh - 100px) * 1.77778));
         padding: 8px 12px;
       }
 
       .arcade-cabinet {
+        width: 100%;
         position: relative;
         background: #0f172a;
         padding: 10px;
@@ -63,9 +64,9 @@
       #game-canvas {
         display: block;
         width: 100%;
-        max-width: 900px;
+        max-width: 1920px;
         height: auto;
-        aspect-ratio: 900 / 500;
+        aspect-ratio: 16 / 9;
         background-color: #000000;
         border-radius: 6px;
         cursor: crosshair;
@@ -107,26 +108,41 @@
           gap: 8px;
         }
       }
+
+      #screen-ui {container-type:size;position:absolute;inset:10px;display:flex;align-items:center;justify-content:center;pointer-events:none;text-align:center}
+      #screen-ui[hidden] {display:none}
+      .screen-panel {width:95%;padding-top:11.1cqw;display:flex;align-items:center;flex-direction:column;gap:2cqw}
+      .screen-panel.menu-panel {padding-top:22.8cqw;gap:1.1cqw}
+      .screen-panel h1 {font-size:clamp(18px,4.2cqw,81px);color:#f4d37a;line-height:1.1}
+      .eyebrow {font-size:1.22cqw;letter-spacing:.33cqw;color:#c4a766;font-weight:700}
+      .screen-panel p:not(.eyebrow),.screen-panel small {font-size:1.44cqw;color:#b7c4d7}
+      .screen-actions {display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+      .screen-panel button {pointer-events:auto;cursor:pointer;padding:1.33cqw 2.67cqw;border:1px solid #ddbd63;border-radius:6px;background:#f4cf66;color:#151a25;font:700 1.67cqw system-ui}
+      .screen-panel button[data-action="menu"] {background:#172231;color:#e5e7eb;border-color:#506077}
+      .screen-panel button:focus-visible {outline:3px solid white;outline-offset:4px}
+      .screen-panel button:disabled {opacity:.4;cursor:wait}
+
     </style>
   </head>
   <body>
     <div class="game-wrapper">
       <div class="arcade-cabinet">
-        <canvas id="game-canvas" width="900" height="500"></canvas>
+        <canvas id="game-canvas" width="1920" height="1080"></canvas>
+        <section id="screen-ui" aria-live="polite"></section>
       </div>
 
       <div class="footer-controls">
         <div class="status-pill">
-          <span class="key-badge">A</span> <span class="key-badge">D</span> / <span class="key-badge">←</span> <span class="key-badge">→</span> Move
+          <span class="key-badge">A</span> <span class="key-badge">D</span> / <span class="key-badge">←</span> <span class="key-badge">→</span> Mover
         </div>
         <div class="status-pill">
-          <span class="key-badge">W</span> / <span class="key-badge">SPACE</span> Jump
+          <span class="key-badge">W</span> / <span class="key-badge">ESPAÇO</span> Pular
         </div>
         <div class="status-pill">
-          <span class="key-badge">CLICK</span> / <span class="key-badge">X</span> Batarang (Hold to Rapid Fire)
+          <span class="key-badge">CLIQUE</span> / <span class="key-badge">X</span> Batarangue (um por clique; recarga de 0,5 s; até 5 ativos)
         </div>
         <div class="status-pill">
-          <span class="key-badge">M</span> Audio Toggle
+          <span class="key-badge">M</span> Ligar/desligar som
         </div>
       </div>
     </div>

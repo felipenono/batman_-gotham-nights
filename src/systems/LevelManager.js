@@ -95,15 +95,15 @@ export class LevelManager {
     // Subtitle
     ctx.font = '700 16px "Courier New", monospace';
     ctx.fillStyle = '#94a3b8';
-    ctx.letterSpacing = '4px';
-    ctx.fillText('STAGE CLEARED — ADVANCING TO', width / 2, height / 2 - 40);
+    ctx.letterSpacing = '0px';
+    ctx.fillText('FASE CONCLUÍDA — PRÓXIMA MISSÃO', width / 2, height / 2 - 40);
 
     // Main Stage Title
-    ctx.font = '900 36px "Arial Black", Impact, sans-serif';
+    ctx.font = '900 28px "Arial Black", Impact, sans-serif';
     ctx.fillStyle = '#fef08a';
     ctx.shadowColor = '#ca8a04';
     ctx.shadowBlur = 15;
-    ctx.fillText(`LEVEL ${this.nextLevelIndex} — ${nextConfig.name}`, width / 2, height / 2);
+    ctx.fillText(`FASE ${this.nextLevelIndex} — ${nextConfig.name}`, width / 2, height / 2);
 
     // Subtitle description
     ctx.shadowBlur = 0;

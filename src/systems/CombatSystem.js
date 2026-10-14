@@ -135,8 +135,13 @@ export class CombatSystem {
     for (const proj of projectiles) {
       if (!proj.alive || proj.owner !== 'villain') continue;
 
-      if (player && player.alive && proj.intersects(player)) {
-        proj.alive = false;
+      if (player && player.alive && !player.intangible && proj.intersects(player)) {
+        if (typeof proj.detonate === 'function') {
+          proj.detonate();
+          if (proj.damageApplied) continue;
+          proj.damageApplied = true;
+        }
+        if (!proj.exploded) proj.alive = false;
         this.createHitSpark(player.x + player.w / 2, player.y + player.h / 2, '#ef4444');
         const damaged = player.takeDamage(proj.damage || 1);
         if (damaged) {
@@ -146,7 +151,7 @@ export class CombatSystem {
     }
 
     // 3. Enemy Body Contact with Batman
-    if (player && player.alive && player.invulnerable <= 0) {
+    if (player && player.alive && !player.intangible && player.invulnerable <= 0) {
       const allHostiles = [...enemies, boss].filter((e) => e && e.alive);
       for (const foe of allHostiles) {
         if (foe.intersects(player)) {

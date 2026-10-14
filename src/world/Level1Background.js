@@ -1,3 +1,4 @@
+import { LIGHTING } from '../utils/constants.js';
 /**
  * @file Level1Background.js
  * Gotham Rooftops: Dark rainy night, thunder flashes, skyline silhouette, and glowing Bat-Signal.
@@ -51,7 +52,7 @@ export class Level1Background extends Background {
     this.lightningTimer -= dt;
     if (this.lightningTimer <= 0) {
       this.lightningTimer = 400 + Math.random() * 300;
-      this.lightningAlpha = 0.8;
+      this.lightningAlpha = 0.2;
     }
     if (this.lightningAlpha > 0) {
       this.lightningAlpha -= 0.08 * dt;
@@ -102,6 +103,7 @@ export class Level1Background extends Background {
 
     // B. Searchlight Volumetric Beam (projected from rooftop up into the cloud bank)
     ctx.save();
+    ctx.globalAlpha *= LIGHTING.INTENSITY;
     const beamGrad = ctx.createLinearGradient(
       signalOriginX,
       signalOriginY,
@@ -155,6 +157,7 @@ export class Level1Background extends Background {
     ctx.roundRect(signalOriginX - 8, signalOriginY - 5, 16, 12, 3);
     ctx.fill();
 
+    ctx.globalAlpha *= LIGHTING.INTENSITY;
     // Glowing front projector lens glint
     ctx.fillStyle = '#ffffff';
     ctx.shadowColor = '#facc15';
@@ -166,6 +169,7 @@ export class Level1Background extends Background {
 
     // D. Luminous Projected Golden-Ivory Spotlight on Clouds
     ctx.save();
+    ctx.globalAlpha *= LIGHTING.INTENSITY;
     ctx.translate(targetCloudX, targetCloudY);
 
     // Atmospheric warm golden halo
@@ -238,11 +242,11 @@ export class Level1Background extends Background {
       ctx.fillRect(bx, by, b.w, b.h);
 
       // Lit yellow windows
-      ctx.fillStyle = '#fef08a';
+      ctx.fillStyle = 'rgba(254, 240, 138, 0.45)';
       for (let wy = by + 12; wy < this.height - 20; wy += 22) {
-        for (let wx = bx + 6; wx < bx + b.w - 10; wx += 14) {
+        for (let wx = b.x + 6; wx < b.x + b.w - 10; wx += 14) {
           if ((Math.sin(wx * 11 + wy * 17) > 0.35)) {
-            ctx.fillRect(wx, wy, 4, 6);
+            ctx.fillRect(wx - parallaxSkyline, wy, 4, 6);
           }
         }
       }

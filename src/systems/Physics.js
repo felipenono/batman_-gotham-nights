@@ -40,7 +40,7 @@ export class Physics {
    * @param {number} dt
    */
   update(entity, platforms = [], worldWidth = 900, worldHeight = 500, dt = 1) {
-    if (!entity || !entity.alive) return;
+    if (!entity || !entity.alive || entity.deathTimer > 0) return;
 
     // Apply gravity
     entity.vy += this.gravity * dt;

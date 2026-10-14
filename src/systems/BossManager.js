@@ -1,3 +1,5 @@
+import { JokerBoss } from '../entities/villains/JokerBoss.js';
+import { GAME } from '../utils/constants.js';
 /**
  * ============================================================================
  * @file BossManager.js
@@ -32,6 +34,9 @@ export class BossManager {
     this.boss = null;          // Instância polimórfica do chefe ativo (Character)
     this.bossSpawned = false;  // Flag de surgimento
     this.bossDefeated = false; // Flag de derrota confirmada
+    this.deathTimer = GAME.DEATH_ANIMATION_FRAMES;
+    this.bossIndex = 0;
+    this.bossTypes = [];
     this.introTimer = 0;       // Temporizador da faixa de aviso dramático
   }
 
@@ -40,6 +45,9 @@ export class BossManager {
    * Zera as variáveis de controle para transição de estágios ou reinício de jogo.
    */
   reset() {
+    this.deathTimer = GAME.DEATH_ANIMATION_FRAMES;
+    this.bossIndex = 0;
+    this.bossTypes = [];
     this.boss = null;
     this.bossSpawned = false;
     this.bossDefeated = false;
@@ -57,37 +65,38 @@ export class BossManager {
   spawnBoss(levelConfig, worldWidth = 900, worldHeight = 500) {
     if (this.bossSpawned) return;
 
+    this.bossTypes = levelConfig.bosses || [levelConfig.boss];
+    this.bossIndex = 0;
+    this.worldWidth = worldWidth;
+    this.worldHeight = worldHeight;
+    this._spawnCurrentBoss();
+  }
+
+  _spawnCurrentBoss() {
+    const factories = { Joker: JokerBoss, Scarecrow, HarleyQuinn, TwoFace };
+    const Boss = factories[this.bossTypes[this.bossIndex]] || Scarecrow;
+    this.boss = new Boss({x: this.worldWidth - 140, y: this.worldHeight - 170});
     this.bossSpawned = true;
     this.bossDefeated = false;
-    this.introTimer = 100; // 100 frames (~1.6s) de banner de alerta na tela
-
-    const spawnX = worldWidth - 140;
-    const spawnY = worldHeight - 170;
-
-    // Seleção polimórfica da subclasse concreta
-    switch (levelConfig.boss) {
-      case 'Scarecrow':
-        this.boss = new Scarecrow({ x: spawnX, y: spawnY - 20 });
-        break;
-      case 'HarleyQuinn':
-        this.boss = new HarleyQuinn({ x: spawnX, y: spawnY });
-        break;
-      case 'TwoFace':
-        this.boss = new TwoFace({ x: spawnX, y: spawnY });
-        break;
-      default:
-        this.boss = new Scarecrow({ x: spawnX, y: spawnY });
-    }
+    this.deathTimer = GAME.DEATH_ANIMATION_FRAMES;
+    this.introTimer = 100;
   }
 
   /**
    * Updates boss status and checks for defeat.
    * @param {Function} onBossDefeated
    */
-  update(onBossDefeated) {
+  update(onBossDefeated, onBossChanged = null) {
     if (this.introTimer > 0) this.introTimer--;
 
     if (this.boss && !this.boss.alive && !this.bossDefeated) {
+      if (this.deathTimer-- > 0) return;
+      if (this.bossIndex + 1 < this.bossTypes.length) {
+        this.bossIndex++;
+        this._spawnCurrentBoss();
+        if (onBossChanged) onBossChanged(this.boss);
+        return;
+      }
       this.bossDefeated = true;
       if (onBossDefeated) {
         onBossDefeated(this.boss);
@@ -124,7 +133,7 @@ export class BossManager {
     ctx.fillStyle = '#fef08a';
     ctx.shadowColor = '#dc2626';
     ctx.shadowBlur = 10;
-    ctx.fillText(`WARNING: ${this.boss.name.toUpperCase()} HAS ENTERED!`, canvasWidth / 2, canvasHeight / 2);
+    ctx.fillText(`ATENÇÃO: ${this.boss.name.toUpperCase()} CHEGOU!`, canvasWidth / 2, canvasHeight / 2);
 
     ctx.restore();
   }

@@ -1,3 +1,6 @@
+import { ScarecrowAcolyte } from '../entities/villains/ScarecrowAcolyte.js';
+import { HarleyThug } from '../entities/villains/HarleyThug.js';
+import { TwoFaceEnforcer } from '../entities/villains/TwoFaceEnforcer.js';
 /**
  * ============================================================================
  * @file Spawner.js
@@ -90,19 +93,19 @@ export class Spawner {
   }
 
   spawnWave(enemiesList, worldWidth, worldHeight) {
-    const waveSize = this.currentLevelConfig.id === 3 ? 2 : 3;
+    const maxActive = this.currentLevelConfig.id === 3 ? 4 : 5;
+    const waveSize = Math.min(this.currentLevelConfig.id === 3 ? 2 : 3, maxActive-enemiesList.filter(e=>e.alive).length);
+    const roster=this.currentLevelConfig.enemyRoster;
+    const factories={Joker, Penguin, ScarecrowAcolyte, HarleyThug, TwoFaceEnforcer, PenguinElite:Penguin};
 
     for (let i = 0; i < waveSize; i++) {
       const spawnFromRight = Math.random() > 0.4;
       const x = spawnFromRight ? worldWidth - 60 - i * 50 : 40 + i * 50;
       const y = worldHeight - 140;
 
-      let enemy = null;
-      if (this.currentLevelConfig.commonEnemy === 'Joker') {
-        enemy = new Joker({ x, y });
-      } else {
-        enemy = new Penguin({ x, y });
-      }
+      const type=roster[i % roster.length];
+      const enemy=new factories[type]({x,y});
+      if(type==='PenguinElite'){enemy.name='Pinguim de contenção';enemy.variantColor='#38bdf8';enemy.hp=enemy.maxHp=30;enemy.speed=1.6;}
 
       if (enemy) {
         enemiesList.push(enemy);

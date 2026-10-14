@@ -13,7 +13,7 @@ export class UmbrellaBurst extends Projectile {
    * @param {number} vx
    * @param {number} vy
    */
-  constructor(x, y, vx, vy) {
+  constructor(x, y, vx, vy, target = null) {
     super({
       x,
       y,
@@ -27,9 +27,26 @@ export class UmbrellaBurst extends Projectile {
     });
     this.speed = PROJECTILE.UMBRELLA_SPEED;
     this.pulse = 0;
+    this.target = target;
+    this.trackingRemaining = PROJECTILE.UMBRELLA_TRACKING_FRAMES;
   }
 
   update(dt = 1, world = null) {
+    if (!this.alive) return;
+    if (this.trackingRemaining > 0 && this.target?.alive) {
+      const dx = this.target.x + this.target.w / 2 - (this.x + this.w / 2);
+      const dy = this.target.y + this.target.h / 2 - (this.y + this.h / 2);
+      if (Math.hypot(dx, dy) > 0.001) {
+        const heading = Math.atan2(this.vy, this.vx);
+        const difference = Math.atan2(Math.sin(Math.atan2(dy, dx) - heading), Math.cos(Math.atan2(dy, dx) - heading));
+        const maxTurn = PROJECTILE.UMBRELLA_TURN_RATE * Math.min(dt, this.trackingRemaining);
+        const angle = heading + Math.max(-maxTurn, Math.min(maxTurn, difference));
+        const speed = Math.hypot(this.vx, this.vy) || this.speed;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+      }
+    }
+    this.trackingRemaining = Math.max(0, this.trackingRemaining - dt);
     this.pulse += 0.25 * dt;
     super.update(dt, world);
   }

@@ -1,133 +1,60 @@
-/**
- * @file PenguinBomb.js
- * Cobblepot's wind-up explosive penguin minion that waddles forward and detonates.
- */
+import { UmbrellaBurst } from './UmbrellaBurst.js';
+import { PROJECTILE } from '../../utils/constants.js';
 
-import { Projectile } from './Projectile.js';
-
-export class PenguinBomb extends Projectile {
-  /**
-   * @param {number} x
-   * @param {number} y
-   * @param {number} vx
-   * @param {number} vy
-   */
-  constructor(x, y, vx, vy) {
-    super({
-      x,
-      y,
-      w: 22,
-      h: 22,
-      vx,
-      vy,
-      damage: 1,
-      lifetime: 140,
-      owner: 'villain',
-    });
-    this.gravity = 0.26;
-    this.waddle = 0;
-    this.exploded = false;
-    this.explodeTimer = 0;
-    this.explodeRadius = 8;
+// Reuses bounded steering, while specializing appearance, fuse and blast damage.
+export class PenguinBomb extends UmbrellaBurst {
+  constructor(x,y,vx,vy,target=null) {
+    super(x,y,vx,vy,target);
+    this.w=20;this.h=26;this.speed=PROJECTILE.PENGUIN_BOMB_SPEED;
+    this.lifetime=PROJECTILE.PENGUIN_BOMB_FUSE;
+    this.exploded=false;this.explodeTimer=0;this.explodeRadius=10;this.damageApplied=false;
   }
-
-  update(dt = 1, world = null) {
-    if (this.exploded) {
-      this.explodeTimer += dt;
-      this.explodeRadius += 2 * dt;
-      this.w = this.explodeRadius * 2;
-      this.h = this.explodeRadius * 2;
-      this.x -= 1 * dt;
-      this.y -= 1 * dt;
-      if (this.explodeTimer >= 22) {
-        this.alive = false;
-      }
+  update(dt=1,world=null) {
+    if(!this.alive)return;
+    if(this.exploded) {
+      this.explodeTimer+=dt;
+      this.explodeRadius=Math.min(PROJECTILE.PENGUIN_BOMB_RADIUS,10+this.explodeTimer*3);
+      this.w=this.h=this.explodeRadius*2;
+      this.x=this.blastX-this.explodeRadius;this.y=this.blastY-this.explodeRadius;
+      if(this.explodeTimer>=PROJECTILE.PENGUIN_BOMB_BLAST_FRAMES)this.alive=false;
       return;
     }
-
-    this.vy += this.gravity * dt;
-    this.waddle += 0.3 * dt;
-    super.update(dt, world);
-
-    // Detonate on floor
-    if (this.y > 430) {
-      this.detonate();
-    }
+    super.update(dt,world);
+    if(this.lifetime<=0){this.alive=true;this.detonate();return;}
+    if(world?.platforms?.some(p=>p.alive&&this.intersects(p)))this.detonate();
+    if(this.target?.alive&&!this.target.intangible&&this.intersects(this.target))this.detonate();
   }
-
   detonate() {
-    if (this.exploded) return;
-    this.exploded = true;
-    this.vx = 0;
-    this.vy = 0;
+    if(this.exploded||!this.alive)return;
+    this.blastX=this.x+this.w/2;this.blastY=this.y+this.h/2;
+    this.exploded=true;this.vx=this.vy=0;
+    this.w=this.h=this.explodeRadius*2;this.x=this.blastX-this.explodeRadius;this.y=this.blastY-this.explodeRadius;
   }
-
-  /**
-   * Procedural drawing of miniature mechanical penguin with ticking fuse.
-   * @param {CanvasRenderingContext2D} ctx
-   */
+  intersects(other) {
+    if(!this.exploded)return super.intersects(other);
+    if(!this.alive||!other?.alive)return false;
+    const x=Math.max(other.x,Math.min(this.blastX,other.x+other.w));
+    const y=Math.max(other.y,Math.min(this.blastY,other.y+other.h));
+    return Math.hypot(x-this.blastX,y-this.blastY)<this.explodeRadius;
+  }
   draw(ctx) {
-    if (!this.alive) return;
-
-    ctx.save();
-    ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
-
-    if (this.exploded) {
-      // Explosion fiery blast
-      ctx.shadowColor = '#f97316';
-      ctx.shadowBlur = 12;
-      ctx.fillStyle = `rgba(239, 68, 68, ${Math.max(0, 1 - this.explodeTimer / 22)})`;
-      ctx.beginPath();
-      ctx.arc(0, 0, this.explodeRadius, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = `rgba(251, 191, 36, ${Math.max(0, 0.9 - this.explodeTimer / 25)})`;
-      ctx.beginPath();
-      ctx.arc(0, 0, this.explodeRadius * 0.6, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      ctx.rotate(Math.sin(this.waddle) * 0.15);
-
-      // Body (egg shaped mechanical penguin)
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 8, 10, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // White belly
-      ctx.fillStyle = '#f8fafc';
-      ctx.beginPath();
-      ctx.ellipse(0, 2, 5, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Mini red bow tie
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(-3, -4, 6, 2);
-
-      // Yellow beak
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.moveTo(-2, -6);
-      ctx.lineTo(2, -6);
-      ctx.lineTo(0, -3);
-      ctx.closePath();
-      ctx.fill();
-
-      // Ticking fuse on head
-      ctx.strokeStyle = '#92400e';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(0, -10);
-      ctx.lineTo(2, -14);
-      ctx.stroke();
-
-      // Red flashing beacon
-      ctx.fillStyle = Math.floor(this.waddle * 4) % 2 === 0 ? '#ef4444' : '#fbbf24';
-      ctx.beginPath();
-      ctx.arc(2, -14, 2.5, 0, Math.PI * 2);
-      ctx.fill();
+    if(!this.alive)return;
+    ctx.save();ctx.translate(this.x+this.w/2,this.y+this.h/2);
+    if(this.exploded){
+      ctx.globalAlpha=1-this.explodeTimer/PROJECTILE.PENGUIN_BOMB_BLAST_FRAMES;
+      ctx.fillStyle='#f97316';ctx.beginPath();ctx.arc(0,0,this.explodeRadius,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#fde68a';ctx.beginPath();ctx.arc(0,0,this.explodeRadius*0.58,0,Math.PI*2);ctx.fill();
+    }else{
+      ctx.rotate(Math.sin(this.pulse)*0.08);
+      ctx.fillStyle='#f59e0b';ctx.fillRect(-9,9,7,4);ctx.fillRect(2,9,7,4);
+      ctx.fillStyle='#111827';ctx.strokeStyle='#64748b';ctx.lineWidth=1;
+      ctx.beginPath();ctx.ellipse(0,0,9,12,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.beginPath();ctx.ellipse(0,3,5.5,7,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#f8fafc';ctx.fillRect(-5,-7,3,3);ctx.fillRect(2,-7,3,3);
+      ctx.fillStyle='#f59e0b';ctx.beginPath();ctx.moveTo(-3,-3);ctx.lineTo(3,-3);ctx.lineTo(0,1);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#be123c';ctx.fillRect(-4,1,8,3);
+      ctx.fillStyle=this.lifetime<30?'#f43f5e':'#fbbf24';ctx.fillRect(-2,-15,4,4);
     }
-
     ctx.restore();
   }
 }

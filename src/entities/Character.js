@@ -15,12 +15,13 @@
  *    O dano é aplicado de forma controlada através do método takeDamage().
  * 
  * 3. POLIMORFISMO (Polymorphism):
- *    Especializa o método update() chamando super.update(dt) para manter a
- *    física cinemática da superclasse enquanto adiciona temporizadores biológicos.
+ *    Especializa update() para os temporizadores biológicos. A translação dos
+ *    personagens pertence a Physics, que também resolve as colisões.
  * ============================================================================
  */
 
 import { Entity } from './Entity.js';
+import { SpriteAnimator } from '../utils/SpriteAnimator.js';
 
 export class Character extends Entity {
   /**
@@ -40,6 +41,8 @@ export class Character extends Entity {
     super({ x, y, w, h });
 
     // [POO - Atributos de Vida / Saúde (Encapsulamento)]
+    this.animator = new SpriteAnimator();
+    this.deathTimer = 0;
     this.maxHp = maxHp;
     this.hp = maxHp;
 
@@ -97,16 +100,19 @@ export class Character extends Entity {
   }
 
   /**
-   * [POO - POLIMORFISMO: SOBRESCRITA COM REUSO (super.update)]
-   * Atualiza a cinemática física da superclasse Entity e processa os temporizadores
+   * [POO - POLIMORFISMO: SOBRESCRITA DE update]
+   * Delega a cinemática a Physics e processa os temporizadores
    * vitais de invulnerabilidade, flash e ciclos de marcha.
    *
    * @param {number} dt - Delta time
    * @param {Object} world - Contexto do cenário
    */
+  drawSprite(ctx) { this.animator.draw(ctx, this); }
+
   update(dt = 1, world = null) {
-    // Executa a translação da superclasse (this.x += this.vx * dt)
-    super.update(dt, world);
+    this.animator.update(this, dt);
+    // Physics integrates characters once and resolves their collisions.
+    // A second Entity.update here would move them off the resolved platforms.
 
     // Decrementa contadores de estados temporais
     if (this.hurtFlash > 0) this.hurtFlash--;

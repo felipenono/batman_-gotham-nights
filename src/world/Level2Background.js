@@ -1,3 +1,4 @@
+import { LIGHTING } from '../utils/constants.js';
 /**
  * @file Level2Background.js
  * Iceberg Lounge: Opulent art deco casino with chandeliers, velvet drapes, neon signage, and marble reflections.
@@ -18,9 +19,9 @@ export class Level2Background extends Background {
   }
 
   draw(ctx, camera = null) {
-    const camX = camera ? camera.renderX : 0;
 
     ctx.save();
+    ctx.translate(-(camera?.renderX ?? 0), -(camera?.renderY ?? 0));
 
     // 1. Velvet Wall Gradient
     const wallGrad = ctx.createLinearGradient(0, 0, 0, this.height);
@@ -34,7 +35,7 @@ export class Level2Background extends Background {
     const panelStep = 180;
     ctx.strokeStyle = '#581c87';
     ctx.lineWidth = 3;
-    for (let x = -camX * 0.3; x < this.width + 200; x += panelStep) {
+    for (let x = 0; x < this.width + 200; x += panelStep) {
       ctx.strokeRect(x, 40, panelStep - 30, 320);
       // Gold inner arch
       ctx.strokeStyle = '#a855f7';
@@ -62,14 +63,15 @@ export class Level2Background extends Background {
       ctx.stroke();
     }
 
-    // 4. NEON "ICEBERG LOUNGE" SIGN
+    // 4. NEON "SALÃO ICEBERG" SIGN
     ctx.save();
-    const neonX = this.width / 2 - camX * 0.2;
+    ctx.globalAlpha *= LIGHTING.INTENSITY;
+    const neonX = this.width / 2;
     const neonY = 80;
 
     // Glowing cyan/pink neon frame
     ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 16;
+    ctx.shadowBlur = 8;
     ctx.strokeStyle = '#0284c7';
     ctx.lineWidth = 3;
     ctx.strokeRect(neonX - 160, neonY - 30, 320, 56);
@@ -79,8 +81,8 @@ export class Level2Background extends Background {
     ctx.font = '900 24px "Arial Black", sans-serif';
     ctx.fillStyle = '#bae6fd';
     ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 12;
-    ctx.fillText('ICEBERG LOUNGE', neonX, neonY);
+    ctx.shadowBlur = 6;
+    ctx.fillText('SALÃO ICEBERG', neonX, neonY);
 
     // Neon martini glass icon
     ctx.strokeStyle = '#f472b6';
@@ -100,7 +102,7 @@ export class Level2Background extends Background {
     ctx.restore();
 
     // 5. Crystal Chandeliers
-    const chandX = [180 - camX * 0.35, 720 - camX * 0.35];
+    const chandX = [180, 720];
     for (const cx of chandX) {
       ctx.save();
       // Chain
@@ -110,6 +112,7 @@ export class Level2Background extends Background {
       ctx.moveTo(cx, 0); ctx.lineTo(cx, 60);
       ctx.stroke();
 
+      ctx.globalAlpha *= LIGHTING.INTENSITY;
       // Tier 1
       ctx.fillStyle = '#fef08a';
       ctx.shadowColor = '#fbbf24';
@@ -138,7 +141,7 @@ export class Level2Background extends Background {
     // Gold diamond tiles on floor
     ctx.strokeStyle = '#ca8a04';
     ctx.lineWidth = 1;
-    for (let x = -camX * 0.5; x < this.width + 120; x += 80) {
+    for (let x = 0; x < this.width + 120; x += 80) {
       ctx.beginPath();
       ctx.moveTo(x, floorY);
       ctx.lineTo(x + 40, this.height);
@@ -149,7 +152,7 @@ export class Level2Background extends Background {
     ctx.save();
     const spotX = this.width / 2 + Math.sin(this.spotlightAngle) * 220;
     const spotGrad = ctx.createRadialGradient(spotX, floorY, 20, spotX, floorY, 180);
-    spotGrad.addColorStop(0, 'rgba(168, 85, 247, 0.35)');
+    spotGrad.addColorStop(0, 'rgba(168, 85, 247, 0.15)');
     spotGrad.addColorStop(1, 'rgba(168, 85, 247, 0)');
     ctx.fillStyle = spotGrad;
     ctx.fillRect(0, floorY - 80, this.width, 145);

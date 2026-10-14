@@ -17,6 +17,8 @@
  * ============================================================================
  */
 
+const normalizeKey = key => key === 'Spacebar' ? ' ' : key.length === 1 ? key.toLowerCase() : key;
+
 import { KEYS } from '../utils/constants.js';
 
 export class Input {
@@ -28,6 +30,7 @@ export class Input {
     this.keysDown = new Set();
     this.keysPressedThisFrame = new Set();
     this._keyDownBuffer = new Set();
+    this.resetVersion = 0;
 
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onKeyUp = this._onKeyUp.bind(this);
@@ -36,24 +39,29 @@ export class Input {
     window.addEventListener('keydown', this._onKeyDown);
     window.addEventListener('keyup', this._onKeyUp);
     window.addEventListener('blur', this._onBlur);
+    globalThis.document?.addEventListener('visibilitychange', this._onBlur);
   }
 
   _onKeyDown(e) {
+    // Native screen buttons keep their Enter/Space activation.
+    if (e.target?.closest?.('button') && ['Enter', ' '].includes(e.key)) return;
     // Prevent scrolling and default actions for gameplay keys
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Spacebar'].includes(e.key)) {
       e.preventDefault();
     }
-    if (!this.keysDown.has(e.key)) {
-      this._keyDownBuffer.add(e.key);
-    }
-    this.keysDown.add(e.key);
+    if (e.repeat) return;
+    const key = e.code?.startsWith('Key') ? e.code.slice(3).toLowerCase() : normalizeKey(e.key);
+    if (!this.keysDown.has(normalizeKey(key))) this._keyDownBuffer.add(key);
+    this.keysDown.add(key);
   }
 
   _onKeyUp(e) {
-    this.keysDown.delete(e.key);
+    const key = e.code?.startsWith('Key') ? e.code.slice(3).toLowerCase() : normalizeKey(e.key);
+    this.keysDown.delete(key);
   }
 
   _onBlur() {
+    this.resetVersion++;
     this.keysDown.clear();
     this._keyDownBuffer.clear();
     this.keysPressedThisFrame.clear();
@@ -90,7 +98,7 @@ export class Input {
     const list = KEYS[action];
     if (!list) return false;
     for (const key of list) {
-      if (this.keysPressedThisFrame.has(key)) return true;
+      if (this.keysPressedThisFrame.has(normalizeKey(key))) return true;
     }
     return false;
   }
@@ -101,7 +109,7 @@ export class Input {
    * @returns {boolean}
    */
   isKeyJustPressed(keyName) {
-    return this.keysPressedThisFrame.has(keyName);
+    return this.keysPressedThisFrame.has(normalizeKey(keyName));
   }
 
   /**
@@ -124,5 +132,6 @@ export class Input {
     window.removeEventListener('keydown', this._onKeyDown);
     window.removeEventListener('keyup', this._onKeyUp);
     window.removeEventListener('blur', this._onBlur);
+    globalThis.document?.removeEventListener('visibilitychange', this._onBlur);
   }
 }

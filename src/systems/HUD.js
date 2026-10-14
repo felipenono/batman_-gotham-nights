@@ -17,38 +17,16 @@
  * ============================================================================
  */
 
+import { drawBatarang } from '../utils/batSymbols.js';
+import { PROJECTILE } from '../utils/constants.js';
+
 export class HUD {
   /**
    * [POO - MÉTODO ESTÁTICO DE DESENHO VETORIAL]
    * Renderiza os ícones de vida do morcego.
    */
   static drawBatIcon(ctx, x, y, active = true) {
-    ctx.save();
-    ctx.translate(x, y);
-
-    if (active) {
-      ctx.shadowColor = '#facc15';
-      ctx.shadowBlur = 6;
-      ctx.fillStyle = '#fbbf24';
-    } else {
-      ctx.fillStyle = '#334155';
-    }
-
-    ctx.beginPath();
-    ctx.moveTo(0, 4);
-    ctx.lineTo(6, 2);
-    ctx.lineTo(11, -5);
-    ctx.lineTo(5, -2);
-    ctx.lineTo(2, -6);
-    ctx.lineTo(0, -3);
-    ctx.lineTo(-2, -6);
-    ctx.lineTo(-5, -2);
-    ctx.lineTo(-11, -5);
-    ctx.lineTo(-6, 2);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.restore();
+    drawBatarang(ctx,x,y,0.7,active);
   }
 
   /**
@@ -61,16 +39,20 @@ export class HUD {
    * @param {number} width
    * @param {number} height
    */
-  static draw(ctx, player, levelConfig, killsInLevel = 0, boss = null, width = 900, height = 500, isMuted = false) {
+  static draw(ctx, player, levelConfig, killsInLevel = 0, boss = null, width = 900, height = 500, isMuted = false, batarangsAvailable = PROJECTILE.BATARANG_MAX_ACTIVE) {
     if (!player) return;
 
     ctx.save();
+    // Preserve readability over bright chandeliers and moving scenery.
+    ctx.fillStyle = 'rgba(5, 10, 20, 0.82)';
+    ctx.fillRect(12, 5, 225, 83);
+    ctx.fillRect(width - 225, 5, 213, 83);
 
     // 1. TOP-LEFT: 5 BAT-LIVES
-    ctx.font = '900 13px "Arial Black", sans-serif';
+    ctx.font = '900 11px "Arial Black", sans-serif';
     ctx.fillStyle = '#94a3b8';
     ctx.textAlign = 'left';
-    ctx.fillText('LIVES', 22, 22);
+    ctx.fillText('VIDAS', 22, 22);
 
     for (let i = 0; i < 5; i++) {
       const isLit = i < player.lives;
@@ -79,7 +61,7 @@ export class HUD {
 
     // HP PIPS (3 mini armor bars for current life)
     ctx.fillStyle = '#64748b';
-    ctx.fillText('HEALTH', 22, 42);
+    ctx.fillText('SAÚDE', 22, 42);
 
     for (let h = 0; h < 3; h++) {
       const activePip = h < player.hp;
@@ -91,13 +73,19 @@ export class HUD {
       ctx.strokeRect(80 + h * 24, 32, 18, 10);
     }
 
+    ctx.fillStyle = batarangsAvailable > 0 ? '#fbbf24' : '#94a3b8';
+    ctx.font = '700 12px monospace';
+    ctx.fillText(`BATARANGUES: ${batarangsAvailable}/${PROJECTILE.BATARANG_MAX_ACTIVE}`, 22, 62);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText(player.shootCooldown > 0 ? 'RECARGA: ' + (player.shootCooldown / 60).toFixed(1).replace('.', ',') + ' s' : batarangsAvailable > 0 ? 'PRONTO PARA LANÇAR' : 'LIMITE ATINGIDO',22,79);
     // 2. TOP-RIGHT: LEVEL INDICATOR & WAVE KILL PROGRESS
     ctx.textAlign = 'right';
     ctx.font = '900 16px "Arial Black", sans-serif';
     ctx.fillStyle = '#fef08a';
     ctx.shadowColor = '#ca8a04';
     ctx.shadowBlur = 6;
-    ctx.fillText(`LEVEL ${levelConfig.id} / 3`, width - 24, 25);
+    ctx.fillText(`FASE ${levelConfig.id} / 3`, width - 24, 25);
     ctx.shadowBlur = 0;
 
     ctx.font = '700 12px monospace';
@@ -110,7 +98,7 @@ export class HUD {
     ctx.font = '800 12px "Courier New", monospace';
     ctx.fillStyle = kills >= threshold ? '#4ade80' : '#f59e0b';
     ctx.fillText(
-      kills >= threshold ? 'BOSS ENGAGED!' : `DEFEATED: ${kills} / ${threshold}`,
+      kills >= threshold ? 'CHEFE EM COMBATE!' : `DERROTADOS: ${kills} / ${threshold}`,
       width - 24,
       58
     );
@@ -163,7 +151,7 @@ export class HUD {
       ctx.fillStyle = '#4ade80';
       ctx.shadowColor = '#16a34a';
       ctx.shadowBlur = 8;
-      ctx.fillText('⚠ FEAR TOXIN ACTIVE: CONTROLS REVERSED! ⚠', width / 2, 70);
+      ctx.fillText('⚠ GÁS DO MEDO: CONTROLES INVERTIDOS! ⚠', width / 2, 70);
     }
 
     // Audio status indicator
@@ -171,7 +159,7 @@ export class HUD {
     ctx.font = '700 11px monospace';
     ctx.fillStyle = isMuted ? '#ef4444' : '#22c55e';
     ctx.shadowBlur = 0;
-    ctx.fillText(isMuted ? '🔇 [M] MUTED' : '🔊 [M] SOUND ON', width - 24, 76);
+    ctx.fillText(isMuted ? '🔇 [M] SEM SOM' : '🔊 [M] SOM LIGADO', width - 24, 76);
 
     ctx.restore();
   }

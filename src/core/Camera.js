@@ -65,11 +65,13 @@ export class Camera {
       const targetCenterX = this.target.x + (this.target.w || 0) / 2;
       const targetCenterY = this.target.y + (this.target.h || 0) / 2;
 
-      const desiredX = targetCenterX - this.width / 2;
-      const desiredY = targetCenterY - this.height / 2;
+      const desiredX = Math.max(0, Math.min(targetCenterX - this.width / 2, this.worldWidth - this.width));
+      const desiredY = Math.max(0, Math.min(targetCenterY - this.height / 2, this.worldHeight - this.height));
 
       this.x += (desiredX - this.x) * this.lerpSpeed;
       this.y += (desiredY - this.y) * this.lerpSpeed;
+      if (Math.abs(desiredX - this.x) < 0.01) this.x = desiredX;
+      if (Math.abs(desiredY - this.y) < 0.01) this.y = desiredY;
     }
 
     // Clamp camera within world boundaries

@@ -1,3 +1,4 @@
+import { drawBatarang } from '../../utils/batSymbols.js';
 /**
  * ============================================================================
  * @file Batarang.js
@@ -38,8 +39,8 @@ export class Batarang extends Projectile {
     super({
       x,
       y,
-      w: 22,
-      h: 14,
+      w: 24,
+      h: 11,
       vx,
       vy,
       damage: PROJECTILE.BATARANG_DAMAGE,
@@ -49,6 +50,11 @@ export class Batarang extends Projectile {
 
     // Taxa de giro angular acelerada
     this.spinSpeed = 0.45;
+  }
+
+  static available(projectiles) {
+    const active = projectiles.filter(p => p instanceof Batarang && p.owner === 'batman' && p.alive).length;
+    return Math.max(0, PROJECTILE.BATARANG_MAX_ACTIVE - active);
   }
 
   /**
@@ -62,38 +68,7 @@ export class Batarang extends Projectile {
     ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
     ctx.rotate(this.spin);
 
-    // Glowing yellow aura
-    ctx.shadowColor = '#facc15';
-    ctx.shadowBlur = 8;
-
-    // Outer Bat silhouette
-    ctx.fillStyle = '#fbbf24';
-    ctx.beginPath();
-    ctx.moveTo(0, 4);
-    ctx.lineTo(8, 2);
-    ctx.lineTo(13, -7);
-    ctx.lineTo(6, -3);
-    ctx.lineTo(2, -7);
-    ctx.lineTo(0, -4);
-    ctx.lineTo(-2, -7);
-    ctx.lineTo(-6, -3);
-    ctx.lineTo(-13, -7);
-    ctx.lineTo(-8, 2);
-    ctx.closePath();
-    ctx.fill();
-
-    // Dark titanium inner core
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#1e293b';
-    ctx.beginPath();
-    ctx.arc(0, -1, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Sharp beveled blade edge highlights
-    ctx.strokeStyle = '#fef08a';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-
+    drawBatarang(ctx);
     ctx.restore();
   }
 }

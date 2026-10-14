@@ -1,3 +1,4 @@
+import { LIGHTING } from '../utils/constants.js';
 /**
  * @file Level3Background.js
  * Arkham Asylum Interior: Gothic stone asylum, glowing inmate cells, flickering tubes, gargoyles, creeping green fog.
@@ -10,6 +11,11 @@ export class Level3Background extends Background {
     super(width, height);
     this.flickerTimer = 0;
     this.fogTime = 0;
+    // Fixtures are world objects. Every halo/reflection uses this same source.
+    this.lights = [
+      { x: 260, y: 45, width: 70, enabled: true, phase: 0 },
+      { x: 640, y: 45, width: 70, enabled: true, phase: 1.7 },
+    ];
   }
 
   update(dt = 1, camera = null) {
@@ -18,9 +24,9 @@ export class Level3Background extends Background {
   }
 
   draw(ctx, camera = null) {
-    const camX = camera ? camera.renderX : 0;
 
     ctx.save();
+    ctx.translate(-(camera?.renderX ?? 0), -(camera?.renderY ?? 0));
 
     // 1. Dark Gothic Stone Wall Base
     const stoneGrad = ctx.createLinearGradient(0, 0, 0, this.height);
@@ -39,7 +45,7 @@ export class Level3Background extends Background {
       ctx.stroke();
 
       const offset = (y % 70 === 0) ? 0 : 35;
-      for (let x = -camX * 0.2 + offset; x < this.width + 100; x += 70) {
+      for (let x = 0 + offset; x < this.width + 100; x += 70) {
         ctx.beginPath();
         ctx.moveTo(x, y); ctx.lineTo(x, y + 35);
         ctx.stroke();
@@ -48,7 +54,7 @@ export class Level3Background extends Background {
 
     // 3. Asylum Cell Bars with glowing prisoner eyes
     const cellStep = 180;
-    for (let cx = -camX * 0.35 + 40; cx < this.width + 120; cx += cellStep) {
+    for (let cx = 0 + 40; cx < this.width + 120; cx += cellStep) {
       // Dark cell recess
       ctx.fillStyle = '#050508';
       ctx.fillRect(cx, 80, 110, 220);
@@ -78,7 +84,7 @@ export class Level3Background extends Background {
     }
 
     // 4. Stone Gargoyle Statues on pillars
-    const pillars = [120 - camX * 0.45, 780 - camX * 0.45];
+    const pillars = [120, 780];
     for (const px of pillars) {
       // Pillar shaft
       ctx.fillStyle = '#1c1917';
@@ -102,34 +108,34 @@ export class Level3Background extends Background {
     }
 
     // 5. Flickering Industrial Fluorescent Ceiling Tubes
-    const isFlickering = Math.sin(this.flickerTimer * 0.4) > 0.85;
-    const lightAlpha = isFlickering ? 0.2 : 0.85;
-
     ctx.save();
-    const tubes = [260 - camX * 0.3, 640 - camX * 0.3];
-    for (const tx of tubes) {
+    for (const light of this.lights) {
+      const tx = light.x;
+      const lightAlpha = this.lightIntensity(light);
       ctx.strokeStyle = '#27272a';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(tx, 0); ctx.lineTo(tx, 45);
+      ctx.moveTo(tx, 0); ctx.lineTo(tx, light.y);
       ctx.stroke();
 
       // Tube glass
       ctx.shadowColor = '#86efac';
-      ctx.shadowBlur = isFlickering ? 4 : 14;
-      ctx.fillStyle = `rgba(240, 253, 244, ${lightAlpha})`;
-      ctx.fillRect(tx - 35, 45, 70, 6);
+      ctx.shadowBlur = lightAlpha > 0 ? 7 : 0;
+      ctx.fillStyle = lightAlpha > 0 ? `rgba(240, 253, 244, ${lightAlpha})` : '#3f3f46';
+      ctx.fillRect(tx - light.width / 2, light.y, light.width, 6);
+      ctx.shadowBlur = 0;
+      if (lightAlpha === 0) continue;
 
       // Cast light beam downward
-      const coneGrad = ctx.createRadialGradient(tx, 50, 10, tx, 250, 220);
+      const coneGrad = ctx.createRadialGradient(tx, light.y + 6, 5, tx, light.y + 6, 180);
       coneGrad.addColorStop(0, `rgba(134, 239, 172, ${lightAlpha * 0.25})`);
       coneGrad.addColorStop(1, 'rgba(134, 239, 172, 0)');
       ctx.fillStyle = coneGrad;
       ctx.beginPath();
-      ctx.moveTo(tx - 35, 51);
-      ctx.lineTo(tx + 35, 51);
-      ctx.lineTo(tx + 120, 380);
-      ctx.lineTo(tx - 120, 380);
+      ctx.moveTo(tx - light.width / 2, light.y + 6);
+      ctx.lineTo(tx + light.width / 2, light.y + 6);
+      ctx.lineTo(tx + 90, light.y + 180);
+      ctx.lineTo(tx - 90, light.y + 180);
       ctx.closePath();
       ctx.fill();
     }
@@ -141,12 +147,12 @@ export class Level3Background extends Background {
     const fogGrad = ctx.createLinearGradient(0, fogBaseY - 60, 0, this.height);
     fogGrad.addColorStop(0, 'rgba(34, 197, 94, 0)');
     fogGrad.addColorStop(0.5, 'rgba(22, 101, 52, 0.45)');
-    fogGrad.addColorStop(1, 'rgba(20, 83, 45, 0.85)');
+    fogGrad.addColorStop(1, 'rgba(20, 83, 45, 0.4)');
     ctx.fillStyle = fogGrad;
     ctx.fillRect(0, fogBaseY - 60, this.width, 180);
 
     // Dynamic swirling fog blobs
-    ctx.fillStyle = 'rgba(74, 222, 128, 0.18)';
+    ctx.fillStyle = 'rgba(12, 35, 25, 0.12)';
     for (let fx = 0; fx < this.width + 100; fx += 140) {
       const fy = fogBaseY + Math.sin(this.fogTime * 2 + fx) * 16;
       ctx.beginPath();
@@ -156,5 +162,33 @@ export class Level3Background extends Background {
     ctx.restore();
 
     ctx.restore();
+  }
+
+  lightIntensity(light) {
+    if (!light.enabled || Math.sin(this.flickerTimer * 0.4 + light.phase) > 0.85) return 0;
+    return 0.85 * LIGHTING.INTENSITY;
+  }
+
+  // Called after platforms, in the same world transform as the colliders.
+  drawSurfaceLighting(ctx, platforms) {
+    for (const light of this.lights) {
+      const intensity = this.lightIntensity(light);
+      if (intensity === 0) continue;
+      const surface = platforms.filter(p => p.alive && p.y > light.y && light.x >= p.x && light.x <= p.x + p.w)
+        .sort((a, b) => a.y - b.y)[0];
+      if (!surface) continue;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(surface.x, surface.y, surface.w, surface.h);
+      ctx.clip();
+      ctx.translate(light.x, surface.y + 3);
+      ctx.scale(1, 0.15);
+      const reflection = ctx.createRadialGradient(0, 0, 2, 0, 0, 65);
+      reflection.addColorStop(0, `rgba(134, 239, 172, ${intensity * 0.35})`);
+      reflection.addColorStop(1, 'rgba(134, 239, 172, 0)');
+      ctx.fillStyle = reflection;
+      ctx.fillRect(-65, -65, 130, 130);
+      ctx.restore();
+    }
   }
 }
