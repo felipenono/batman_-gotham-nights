@@ -1,6 +1,6 @@
 # Pontuação
 
-Implementação em `src/systems/ScoreManager.js`. Todos os valores, textos, cores e tempos da animação ficam em `LOBBY.scoring`, em `src/config/lobby.js`.
+Implementação em `src/systems/ScoreManager.js`. Todos os valores, textos, cores e tempos da animação ficam em `LOBBY.scoring`, em `src/config/configuracao.js`.
 
 | Evento | Pontos | Configuração |
 |---|---:|---|
@@ -24,7 +24,7 @@ scoreManager.adicionarPontosMob(inimigo.scoreType);
 scoreManager.adicionarPontosChefao(chefao.scoreType);
 ```
 
-Cada entidade possui uma chave explícita `scoreType`, que não muda na compilação. Chaves atuais de mobs: `Joker`, `Penguin`, `HarleyThug`, `ScarecrowAcolyte`, `TwoFaceEnforcer`. Chefes: `JokerBoss`, `Scarecrow`, `HarleyQuinn`, `TwoFace`.
+Cada entidade possui uma chave explícita `scoreType`, que não muda na compilação. Chaves atuais de mobs: `Joker`, `Penguin`, `PenguinElite`, `HarleyThug`, `ScarecrowAcolyte`, `TwoFaceEnforcer`. Chefes: `JokerBoss`, `Scarecrow`, `HarleyQuinn`, `TwoFace`.
 
 Para valores individuais:
 

@@ -11,7 +11,7 @@ public/assets/
   audio/lobby_theme.mp3           # coloque sua trilha aqui
   audio/menu_click.mp3            # efeito opcional do botão
 src/
-  config/lobby.js                 # assets, paleta, volumes, tempos e lista de botões
+  config/configuracao.js          # assets, paleta, volumes, tempos e lista de botões
   scenes/MenuScene.js             # interface, teclado e controle
   scenes/GothamBackdrop.js        # skyline em três camadas, névoa, chuva e Bat-Sinal
   core/SceneManager.js            # registro de cenas e transição para preto
@@ -29,7 +29,7 @@ Os estilos das páginas de inspeção em `tests/` também foram extraídos para 
 
 Substitua `public/assets/images/logo.png` para trocar a imagem. O símbolo anexado já está incluído. O CSS trata o arquivo de referência preto sobre branco para compor com o fundo. Se usar um PNG transparente colorido, remova o filtro de `.bat-logo` em `src/styles/lobby.css` para preservar suas cores.
 
-Coloque sua música em `public/assets/audio/lobby_theme.mp3`, e o clique opcional em `public/assets/audio/menu_click.mp3`. Para outros nomes, altere `LOBBY.assets` em `src/config/lobby.js`. Os caminhos são compatíveis com o `base` do Vite.
+Coloque sua música em `public/assets/audio/lobby_theme.mp3`, e o clique opcional em `public/assets/audio/menu_click.mp3`. Para outros nomes, altere `LOBBY.assets` em `src/config/configuracao.js`. Os caminhos são compatíveis com o `base` do Vite.
 
 O navegador exige uma interação antes do áudio: clique, toque ou pressione uma tecla para liberar a trilha. O fade-in começa nesse gesto; o fade-out acompanha a saída do menu. Se faltarem arquivos, a música e o clique usam o sintetizador existente. Se o logo faltar, aparece um emblema geométrico substituto. Nenhum asset opcional impede iniciar a partida.
 

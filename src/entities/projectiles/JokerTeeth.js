@@ -1,103 +1,77 @@
-/**
- * @file JokerTeeth.js
- * Joker's wind-up chattering teeth that bounce along an arc towards Batman.
- */
+// Este arquivo cuida de controlar os dentes saltitantes.
+import { APARENCIA } from "../../config/configuracao.js";
 
-import { Projectile } from './Projectile.js';
-
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+import { Projectile } from "./Projectile.js";
+const estiloVisual = APARENCIA.JokerTeeth;
+// ===== COMPORTAMENTO =====
 export class JokerTeeth extends Projectile {
-  /**
-   * @param {number} x
-   * @param {number} y
-   * @param {number} vx
-   * @param {number} vy
-   */
-  constructor(x, y, vx, vy) {
+  // Recebe as dependências e prepara o estado inicial deste componente.
+  constructor(posicaoX, posicaoY, velocidadeX, velocidadeY) {
     super({
-      x,
-      y,
+      x: posicaoX,
+      y: posicaoY,
       w: 24,
       h: 20,
-      vx,
-      vy,
+      vx: velocidadeX,
+      vy: velocidadeY,
       damage: 1,
       lifetime: 200,
-      owner: 'villain',
+      owner: "villain"
     });
     this.gravity = 0.25;
     this.chatterAngle = 0;
   }
-
-  update(dt = 1, world = null) {
-    this.vy += this.gravity * dt;
-    super.update(dt, world);
-    this.chatterAngle += 0.35 * dt;
-
-    // Bounce and hop along the ground level
+  // Recebe a atualização atual e avança o estado, sem redesenhar a tela.
+  update(passoTempo = 1, mundo = null) {
+    this.vy += this.gravity * passoTempo;
+    super.update(passoTempo, mundo);
+    this.chatterAngle += 0.35 * passoTempo;
     if (this.y >= 420) {
       this.y = 420;
       this.vy = -3.5;
     }
   }
-
-  /**
-   * Procedural drawing of wind-up teeth with chattering jaws and wind-up key.
-   * @param {CanvasRenderingContext2D} ctx
-   */
-  draw(ctx) {
+  // Recebe o contexto 2D e desenha o estado atual sem avançar o tempo.
+  draw(contexto) {
     if (!this.alive) return;
-
-    ctx.save();
-    ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
-    ctx.scale(this.vx >= 0 ? 1 : -1, 1);
-
+    contexto.save();
+    contexto.translate(this.x + this.w / 2, this.y + this.h / 2);
+    contexto.scale(this.vx >= 0 ? 1 : -1, 1);
     const jawOpen = Math.sin(this.chatterAngle) * 3;
-
-    // Wind-up key at the back
-    ctx.fillStyle = '#facc15';
-    ctx.fillRect(-14, -3, 5, 2);
-    ctx.beginPath();
-    ctx.arc(-15, -2, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Upper red gum
-    ctx.fillStyle = '#dc2626';
-    ctx.beginPath();
-    ctx.ellipse(0, -5 - jawOpen, 10, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Upper sharp white teeth
-    ctx.fillStyle = '#ffffff';
-    for (let i = -7; i <= 7; i += 3.5) {
-      ctx.beginPath();
-      ctx.moveTo(i - 1.5, -4 - jawOpen);
-      ctx.lineTo(i, 0 - jawOpen);
-      ctx.lineTo(i + 1.5, -4 - jawOpen);
-      ctx.fill();
+    contexto.fillStyle = estiloVisual.preenchimento1;
+    contexto.fillRect(-14, -3, 5, 2);
+    contexto.beginPath();
+    contexto.arc(-15, -2, 4, 0, Math.PI * 2);
+    contexto.fill();
+    contexto.fillStyle = estiloVisual.preenchimento2;
+    contexto.beginPath();
+    contexto.ellipse(0, -5 - jawOpen, 10, 5, 0, 0, Math.PI * 2);
+    contexto.fill();
+    contexto.fillStyle = estiloVisual.preenchimento3;
+    for (let indiceItem = -7; indiceItem <= 7; indiceItem += 3.5) {
+      contexto.beginPath();
+      contexto.moveTo(indiceItem - 1.5, -4 - jawOpen);
+      contexto.lineTo(indiceItem, 0 - jawOpen);
+      contexto.lineTo(indiceItem + 1.5, -4 - jawOpen);
+      contexto.fill();
     }
-
-    // Lower red gum
-    ctx.fillStyle = '#b91c1c';
-    ctx.beginPath();
-    ctx.ellipse(0, 5 + jawOpen, 10, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Lower sharp white teeth
-    ctx.fillStyle = '#ffffff';
-    for (let i = -7; i <= 7; i += 3.5) {
-      ctx.beginPath();
-      ctx.moveTo(i - 1.5, 4 + jawOpen);
-      ctx.lineTo(i, 0 + jawOpen);
-      ctx.lineTo(i + 1.5, 4 + jawOpen);
-      ctx.fill();
+    contexto.fillStyle = estiloVisual.preenchimento4;
+    contexto.beginPath();
+    contexto.ellipse(0, 5 + jawOpen, 10, 5, 0, 0, Math.PI * 2);
+    contexto.fill();
+    contexto.fillStyle = estiloVisual.preenchimento3;
+    for (let indiceItem = -7; indiceItem <= 7; indiceItem += 3.5) {
+      contexto.beginPath();
+      contexto.moveTo(indiceItem - 1.5, 4 + jawOpen);
+      contexto.lineTo(indiceItem, 0 + jawOpen);
+      contexto.lineTo(indiceItem + 1.5, 4 + jawOpen);
+      contexto.fill();
     }
-
-    // Green toxic slobber drops
-    ctx.fillStyle = '#22c55e';
-    ctx.beginPath();
-    ctx.arc(3, jawOpen, 1.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
+    contexto.fillStyle = estiloVisual.preenchimento6;
+    contexto.beginPath();
+    contexto.arc(3, jawOpen, 1.5, 0, Math.PI * 2);
+    contexto.fill();
+    contexto.restore();
   }
 }

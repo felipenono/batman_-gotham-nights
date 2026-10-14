@@ -1,196 +1,134 @@
-/**
- * ============================================================================
- * @file AudioManager.js
- * @category POO - Fachada de Áudio & Sequenciador (Audio Subsystem / Façade Pattern)
- * ============================================================================
- * CONCEITOS DE PROGRAMAÇÃO ORIENTADA A OBJETOS (POO):
- * 
- * 1. ENCAPSULAMENTO DE HARDWARE DE ÁUDIO (Web Audio API):
- *    Isola o AudioContext do navegador e a árvore de nós de ganho (Master, BGM, SFX).
- *    Os componentes do jogo apenas solicitam playSfx('nome') ou setTrack('nome'),
- *    sem precisar lidar com buffers, osciladores ou timestamps nativos.
- * 
- * 2. MODULARIDADE E SEPARAÇÃO DE PASTAS:
- *    Localizado na pasta independente 'src/audio/' para que parâmetros de volume,
- *    efeitos e partituras possam ser alterados facilmente sem impactar a física ou entidades.
- * 
- * 3. COMPOSIÇÃO:
- *    Colabora com AudioConfig (dados), SoundEffects (síntese) e MusicComposer (partituras).
- * ============================================================================
- */
-
-import { AUDIO_CONFIG } from './AudioConfig.js';
-import { LOBBY } from '../config/lobby.js';
-import { MusicComposer } from './MusicComposer.js';
-import { SoundEffects } from './SoundEffects.js';
-
+// Este arquivo cuida de coordenar o contexto de áudio, os volumes e o sequenciador.
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+import { AUDIO_CONFIG } from "../config/configuracao.js";
+import { LOBBY } from "../config/configuracao.js";
+import { MusicComposer } from "./MusicComposer.js";
+import { SoundEffects } from "./SoundEffects.js";
+// ===== COMPORTAMENTO =====
 export class AudioManager {
   /**
-   * CONSTRUTOR:
-   * Inicializa barramentos e configura o desbloqueio por gesto do usuário.
-   */
+  * CONSTRUTOR:
+  * Inicializa barramentos e configura o desbloqueio por gesto do usuário.
+  */
+  // Recebe as dependências e prepara o estado inicial deste componente.
   constructor() {
+    this.encerrado = false;
     this.ctx = null;
     this.masterGain = null;
     this.bgmGain = null;
     this.sfxGain = null;
     this.isMuted = false;
     this.masterVolume = AUDIO_CONFIG.VOLUMES.MASTER;
-
-    // Estados do Sequenciador Musical
-    this.currentTrack = null; // 'menu' | 'rooftops' | 'boss'
+    this.currentTrack = null;
     this.step = 0;
     this.tempo = AUDIO_CONFIG.TEMPOS.ROOFTOPS;
     this.musicTimer = null;
     this.nextNoteTime = 0;
-
     this._initContext = this._initContext.bind(this);
     this._scheduler = this._scheduler.bind(this);
-
-    // Auto-unlock on first user gesture
-    window.addEventListener('keydown', this._initContext, { once: true });
-    window.addEventListener('mousedown', this._initContext, { once: true });
-    window.addEventListener('touchstart', this._initContext, { once: true });
+    window.addEventListener("keydown", this._initContext, { once: true });
+    window.addEventListener("mousedown", this._initContext, { once: true });
+    window.addEventListener("touchstart", this._initContext, { once: true });
   }
-
   _initContext() {
+    if (this.encerrado) return;
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       this.ctx = new AudioCtx();
-
-      // Master Output
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(
-        this.isMuted ? 0 : this.masterVolume,
-        this.ctx.currentTime
-      );
+      this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.masterVolume, this.ctx.currentTime);
       this.masterGain.connect(this.ctx.destination);
-
-      // Separate BGM bus
       this.bgmGain = this.ctx.createGain();
       this.bgmGain.gain.setValueAtTime(AUDIO_CONFIG.VOLUMES.BGM, this.ctx.currentTime);
       this.bgmGain.connect(this.masterGain);
-
-      // Separate SFX bus
       this.sfxGain = this.ctx.createGain();
       this.sfxGain.gain.setValueAtTime(AUDIO_CONFIG.VOLUMES.SFX, this.ctx.currentTime);
       this.sfxGain.connect(this.masterGain);
-
-      // Start music sequencer
       this.nextNoteTime = this.ctx.currentTime + 0.1;
       this._startScheduler();
-    } else if (this.ctx.state === 'suspended') {
+    } else if (this.ctx.state === "suspended") {
       this.ctx.resume();
     }
   }
-
-  /**
-   * Toggles mute state on/off.
-   * @returns {boolean} Current mute state
-   */
   toggleMute() {
     this.isMuted = !this.isMuted;
     if (this.masterGain && this.ctx) {
-      this.masterGain.gain.setValueAtTime(
-        this.isMuted ? 0 : this.masterVolume,
-        this.ctx.currentTime
-      );
+      this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.masterVolume, this.ctx.currentTime);
     }
     return this.isMuted;
   }
-
-  /**
-   * Sets the active background soundtrack.
-   * @param {'menu' | 'rooftops' | 'boss' | null} track
-   */
-  setTrack(track, { deferContext = false } = {}) {
-    if (this.currentTrack === track) return;
-    this.currentTrack = track;
+  setTrack(trilha, { deferContext = false } = {}) {
+    if (this.currentTrack === trilha) return;
+    this.currentTrack = trilha;
     this.step = 0;
-
-    if (track === 'boss') {
+    if (trilha === "boss") {
       this.tempo = AUDIO_CONFIG.TEMPOS.BOSS;
-    } else if (track === 'rooftops') {
+    } else if (trilha === "rooftops") {
       this.tempo = AUDIO_CONFIG.TEMPOS.ROOFTOPS;
-    } else if (track === 'menu') {
+    } else if (trilha === "menu") {
       this.tempo = AUDIO_CONFIG.TEMPOS.MENU;
-    } else if (LOBBY.endScreens.screens[track]) {
-      this.tempo = LOBBY.endScreens.screens[track].audio.tempo;
+    } else if (LOBBY.endScreens.screens[trilha]) {
+      this.tempo = LOBBY.endScreens.screens[trilha].audio.tempo;
     }
-
     if (!this.ctx && !deferContext) {
       this._initContext();
     }
   }
-
-  /**
-   * Dispatches a sound effect by name.
-   * @param {string} type - 'throw' | 'hit' | 'batman_hit' | 'kill' | 'joker_laugh' | 'teeth_chatter' | etc.
-   */
-  playSfx(type) {
+  playSfx(tipo) {
     if (!this.ctx || this.isMuted) return;
-    SoundEffects.play(type, this.ctx, this.sfxGain);
+    SoundEffects.play(tipo, this.ctx, this.sfxGain);
   }
-
   _startScheduler() {
     if (this.musicTimer) clearInterval(this.musicTimer);
     this.musicTimer = setInterval(this._scheduler, 25);
   }
-
   _scheduler() {
     if (!this.ctx || this.isMuted || !this.currentTrack) return;
-
     this.nextNoteTime = Math.max(this.nextNoteTime, this.ctx.currentTime);
-    const scheduleAheadTime = 0.12; // 120ms lookahead
+    const scheduleAheadTime = 0.12;
     while (this.nextNoteTime < this.ctx.currentTime + scheduleAheadTime) {
-      MusicComposer.scheduleStep(
-        this.currentTrack,
-        this.nextNoteTime,
-        this.step,
-        this.ctx,
-        this.bgmGain
-      );
-
-      const secondsPerBeat = 60.0 / this.tempo;
+      MusicComposer.scheduleStep(this.currentTrack, this.nextNoteTime, this.step, this.ctx, this.bgmGain);
+      const secondsPerBeat = 60 / this.tempo;
       const secondsPer16th = secondsPerBeat / 4;
       this.nextNoteTime += secondsPer16th;
-      this.step = (this.step + 1) % 64; // 4-bar loop
+      this.step = (this.step + 1) % 64;
     }
   }
-
-  // Volume setters for easy runtime balancing
   setMasterVolume(val) {
     this.masterVolume = Math.max(0, Math.min(1, val));
     if (this.masterGain && this.ctx && !this.isMuted) {
       this.masterGain.gain.setValueAtTime(Math.max(0, Math.min(1, val)), this.ctx.currentTime);
     }
   }
-
   setBgmVolume(val) {
     if (this.bgmGain && this.ctx) {
       this.bgmGain.gain.cancelScheduledValues(this.ctx.currentTime);
       this.bgmGain.gain.setValueAtTime(Math.max(0, Math.min(1, val)), this.ctx.currentTime);
     }
   }
-
   /** Fade da trilha da partida antes de trocar para uma tela de resultado. */
-  fadeBgmVolume(value, duration) {
+  fadeBgmVolume(valor, duracao) {
     if (!this.bgmGain || !this.ctx) return;
-    const gain = this.bgmGain.gain, now = this.ctx.currentTime;
-    gain.cancelScheduledValues(now);
-    gain.setValueAtTime(gain.value, now);
-    gain.linearRampToValueAtTime(value, now + duration / 1000);
+    const ganho = this.bgmGain.gain, instanteAtual = this.ctx.currentTime;
+    ganho.cancelScheduledValues(instanteAtual);
+    ganho.setValueAtTime(ganho.value, instanteAtual);
+    ganho.linearRampToValueAtTime(valor, instanteAtual + duracao / 1000);
   }
-
   setSfxVolume(val) {
     if (this.sfxGain && this.ctx) {
       this.sfxGain.gain.setValueAtTime(Math.max(0, Math.min(1, val)), this.ctx.currentTime);
     }
   }
-
+  // Encerra os recursos desta instância para não deixar eventos ativos.
   destroy() {
+    // Um gesto posterior não pode recriar o contexto de um gerenciador descartado.
+    this.encerrado = true;
+    window.removeEventListener("keydown", this._initContext);
+    window.removeEventListener("mousedown", this._initContext);
+    window.removeEventListener("touchstart", this._initContext);
     if (this.musicTimer) clearInterval(this.musicTimer);
+    this.musicTimer = null;
     if (this.ctx) {
       this.ctx.close();
       this.ctx = null;

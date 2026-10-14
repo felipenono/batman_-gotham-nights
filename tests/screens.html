@@ -1,4 +1,4 @@
-<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Revisão de telas e sprites</title><link rel="stylesheet" href="./screens.css"><nav><button id="menu">Início</button><button id="over">Fim de jogo</button><button id="victory">Vitória</button><button id="death">Testar morte real</button><button id="sprites">Verificar sprites</button></nav>
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Revisão de telas e sprites</title><link rel="stylesheet" href="../src/styles/game.css"><link rel="stylesheet" href="../src/styles/lobby.css"><link rel="stylesheet" href="../src/styles/end-game.css"><link rel="stylesheet" href="./screens.css"><nav class="preview-toolbar"><button id="menu">Início</button><button id="over">Fim de jogo</button><button id="victory">Vitória</button><button id="death">Testar morte real</button><button id="sprites">Verificar sprites</button></nav>
 <div class="arcade-cabinet"><canvas id="game-canvas" width="1920" height="1080"></canvas><section id="screen-ui"></section></div><pre id="results">Selecione uma tela.</pre><div class="gallery"></div>
 <script type="module">
 import {loadSprites} from '../src/utils/SpriteAnimator.js';
@@ -6,14 +6,13 @@ await loadSprites();
 import {Game} from '../src/core/Game.js';
 import {SPRITE_ART,SPRITE_ACTIONS,spriteFrame} from '../src/utils/SpriteAnimator.js';
 const game=new Game(document.querySelector('#game-canvas')),results=document.querySelector('#results');
-let running=false;
-function show(state){running=false;game.restartGame();game.state=state;game.gameOverCooldown=0;game._render();game.screenUI.update();results.textContent='Tela: '+state;}
+function show(state){game.sceneManager.transition=null;game.restartGame();game.state=state;game.gameOverCooldown=0;game._render();game.screenUI.update();results.textContent='Tela: '+state;}
 document.querySelector('#menu').onclick=()=>show('MENU');
 document.querySelector('#over').onclick=()=>show('GAME_OVER');
 document.querySelector('#victory').onclick=()=>show('VICTORY');
-document.querySelector('#death').onclick=()=>{game.restartGame();game.spawner.timer=99999;game.player.lives=1;game.player.invulnerable=0;game.player.takeDamage(3);running=true;};
+document.querySelector('#death').onclick=()=>{game.restartGame();game.spawner.timer=99999;game.player.lives=1;game.player.invulnerable=0;game.player.takeDamage(3);};
 document.querySelector('#screen-ui').addEventListener('click',()=>{game._render();results.textContent='Estado após botão: '+game.state;});
-function frame(){if(running){game._update(1);game._render();game.screenUI.update();if(game.state==='GAME_OVER'&&game.gameOverCooldown<=0)running=false;}requestAnimationFrame(frame);}frame();
+// O mesmo loop da página principal mantém as transições e os controles ativos.
 document.querySelector('#sprites').onclick=()=>{
  const gallery=document.querySelector('.gallery');gallery.replaceChildren();let count=0,clipped=[];
  for(const key of Object.keys(SPRITE_ART))for(const [action,n] of Object.entries(SPRITE_ACTIONS)){
@@ -26,5 +25,5 @@ document.querySelector('#sprites').onclick=()=>{
   const label=document.createElement('figcaption');label.textContent=key+'_'+action;figure.append(c,label);gallery.append(figure);
  }
  results.textContent=count+' quadros renderizados. Bordas cortadas: '+clipped.length+(clipped.length?' '+clipped.join(', '):'. Todos transparentes nas extremidades.');
-};show('MENU');
+};show('MENU');game.start();
 </script></html>

@@ -173,7 +173,7 @@ package-lock.json        # Versões exatas das dependências
 
 ### Ajustar as regras do jogo
 
-As configurações principais ficam em [src/utils/constants.js](src/utils/constants.js):
+As configurações principais ficam em [src/config/configuracao.js](src/config/configuracao.js):
 
 - `GAME`: resolução, gravidade, vidas, saúde, duração da intangibilidade e tolerância do pulo.
 - `PROJECTILE`: dano, velocidade, recarga, limite de batarangues e parâmetros dos explosivos do Pinguim.

@@ -1,96 +1,73 @@
-/**
- * @file Coin.js
- * Two-Face's double-headed scarred silver dollar that arcs and bounces once.
- */
+// Este arquivo cuida de controlar as moedas lançadas.
+import { APARENCIA } from "../../config/configuracao.js";
 
-import { Projectile } from './Projectile.js';
-
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+import { Projectile } from "./Projectile.js";
+const estiloVisual = APARENCIA.Coin;
+// ===== COMPORTAMENTO =====
 export class Coin extends Projectile {
-  /**
-   * @param {number} x
-   * @param {number} y
-   * @param {number} vx
-   * @param {number} vy
-   */
-  constructor(x, y, vx, vy) {
+  // Recebe as dependências e prepara o estado inicial deste componente.
+  constructor(posicaoX, posicaoY, velocidadeX, velocidadeY) {
     super({
-      x,
-      y,
+      x: posicaoX,
+      y: posicaoY,
       w: 18,
       h: 18,
-      vx,
-      vy,
+      vx: velocidadeX,
+      vy: velocidadeY,
       damage: 1,
       lifetime: 180,
-      owner: 'villain',
+      owner: "villain"
     });
     this.gravity = 0.28;
     this.bounces = 0;
     this.maxBounces = 1;
     this.flipAngle = 0;
   }
-
-  update(dt = 1, world = null) {
-    this.vy += this.gravity * dt;
-    this.flipAngle += 0.35 * dt;
-
-    super.update(dt, world);
-
-    // Bounce on floor
+  // Recebe a atualização atual e avança o estado, sem redesenhar a tela.
+  update(passoTempo = 1, mundo = null) {
+    this.vy += this.gravity * passoTempo;
+    this.flipAngle += 0.35 * passoTempo;
+    super.update(passoTempo, mundo);
     if (this.y > 430 && this.bounces < this.maxBounces) {
       this.y = 430;
       this.vy = -Math.abs(this.vy) * 0.65;
       this.bounces++;
     }
   }
-
-  /**
-   * Procedural drawing of vertically spinning Two-Face silver dollar with scarred side.
-   * @param {CanvasRenderingContext2D} ctx
-   */
-  draw(ctx) {
+  // Recebe o contexto 2D e desenha o estado atual sem avançar o tempo.
+  draw(contexto) {
     if (!this.alive) return;
-
-    ctx.save();
-    ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
-
+    contexto.save();
+    contexto.translate(this.x + this.w / 2, this.y + this.h / 2);
     const scaleX = Math.cos(this.flipAngle);
-    ctx.scale(scaleX, 1);
-
+    contexto.scale(scaleX, 1);
     const isScarredSide = Math.sin(this.flipAngle) > 0;
-
-    // Glowing coin rim
-    ctx.shadowColor = '#cbd5e1';
-    ctx.shadowBlur = 4;
-
-    // Coin face
-    ctx.fillStyle = isScarredSide ? '#475569' : '#e2e8f0';
-    ctx.beginPath();
-    ctx.arc(0, 0, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Inner rim
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = isScarredSide ? '#1e293b' : '#94a3b8';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
+    contexto.shadowColor = estiloVisual.brilho1;
+    contexto.shadowBlur = 4;
+    contexto.fillStyle = isScarredSide ? estiloVisual.gradiente2 : estiloVisual.gradiente3;
+    contexto.beginPath();
+    contexto.arc(0, 0, 8, 0, Math.PI * 2);
+    contexto.fill();
+    contexto.shadowBlur = 0;
+    contexto.strokeStyle = isScarredSide ? estiloVisual.gradiente4 : estiloVisual.gradiente5;
+    contexto.lineWidth = 1;
+    contexto.stroke();
     if (isScarredSide) {
-      // Scratched X marks on scarred coin side
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(-5, -5); ctx.lineTo(5, 5);
-      ctx.moveTo(-5, 5); ctx.lineTo(5, -5);
-      ctx.stroke();
+      contexto.strokeStyle = estiloVisual.contorno6;
+      contexto.lineWidth = 1.2;
+      contexto.beginPath();
+      contexto.moveTo(-5, -5);
+      contexto.lineTo(5, 5);
+      contexto.moveTo(-5, 5);
+      contexto.lineTo(5, -5);
+      contexto.stroke();
     } else {
-      // Pristine profile silhouette
-      ctx.fillStyle = '#64748b';
-      ctx.beginPath();
-      ctx.arc(0, -1, 3, 0, Math.PI * 2);
-      ctx.fill();
+      contexto.fillStyle = estiloVisual.preenchimento7;
+      contexto.beginPath();
+      contexto.arc(0, -1, 3, 0, Math.PI * 2);
+      contexto.fill();
     }
-
-    ctx.restore();
+    contexto.restore();
   }
 }

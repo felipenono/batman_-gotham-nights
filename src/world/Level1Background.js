@@ -1,279 +1,239 @@
-import { LIGHTING } from '../utils/constants.js';
-/**
- * @file Level1Background.js
- * Gotham Rooftops: Dark rainy night, thunder flashes, skyline silhouette, and glowing Bat-Signal.
- */
+// Este arquivo cuida de desenhar os telhados e o céu de Gotham.
+import { APARENCIA } from "../config/configuracao.js";
 
-import { Background } from './Background.js';
-
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+import { LIGHTING } from "../config/configuracao.js";
+import { Background } from "./Background.js";
+const estiloVisual = APARENCIA.Level1Background;
+// ===== COMPORTAMENTO =====
 export class Level1Background extends Background {
-  constructor(width = 900, height = 500) {
-    super(width, height);
-
+  // Recebe as dependências e prepara o estado inicial deste componente.
+  constructor(largura = 900, altura = 500) {
+    super(largura, altura);
     this.rainDrops = [];
-    for (let i = 0; i < 120; i++) {
+    for (let indiceItem = 0; indiceItem < 120; indiceItem++) {
       this.rainDrops.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
+        x: Math.random() * largura,
+        y: Math.random() * altura,
         len: 12 + Math.random() * 10,
-        speed: 14 + Math.random() * 6,
+        speed: 14 + Math.random() * 6
       });
     }
-
     this.lightningTimer = 300;
     this.lightningAlpha = 0;
     this.signalAngle = 0;
-
-    // Distant buildings data
     this.buildings = [];
     let curX = 0;
-    while (curX < width + 400) {
+    while (curX < largura + 400) {
       const bw = 40 + Math.random() * 60;
       const bh = 140 + Math.random() * 180;
-      this.buildings.push({ x: curX, w: bw, h: bh });
-      curX += bw + (Math.random() * 15);
+      this.buildings.push({
+        x: curX,
+        w: bw,
+        h: bh
+      });
+      curX += bw + Math.random() * 15;
     }
   }
-
-  update(dt = 1, camera = null) {
-    this.signalAngle += 0.015 * dt;
-
-    // Rain simulation
+  // Recebe a atualização atual e avança o estado, sem redesenhar a tela.
+  update(passoTempo = 1, cameraDoJogo = null) {
+    this.signalAngle += 0.015 * passoTempo;
     for (const drop of this.rainDrops) {
-      drop.y += drop.speed * dt;
-      drop.x -= 2.5 * dt;
+      drop.y += drop.speed * passoTempo;
+      drop.x -= 2.5 * passoTempo;
       if (drop.y > this.height) {
         drop.y = -20;
         drop.x = Math.random() * (this.width + 100);
       }
     }
-
-    // Thunder flashes
-    this.lightningTimer -= dt;
+    this.lightningTimer -= passoTempo;
     if (this.lightningTimer <= 0) {
       this.lightningTimer = 400 + Math.random() * 300;
       this.lightningAlpha = 0.2;
     }
     if (this.lightningAlpha > 0) {
-      this.lightningAlpha -= 0.08 * dt;
+      this.lightningAlpha -= 0.08 * passoTempo;
       if (this.lightningAlpha < 0) this.lightningAlpha = 0;
     }
   }
-
-  draw(ctx, camera = null) {
-    const camX = camera ? camera.renderX : 0;
-
-    ctx.save();
-
-    // 1. Night Sky Gradient
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, this.height);
-    skyGrad.addColorStop(0, '#020617');
-    skyGrad.addColorStop(0.5, '#0b132b');
-    skyGrad.addColorStop(1, '#1c2541');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, this.width, this.height);
-
-    // 2. THE BAT-SIGNAL on clouds (matches reference image)
-    ctx.save();
+  // Recebe o contexto 2D e desenha o estado atual sem avançar o tempo.
+  draw(contexto, cameraDoJogo = null) {
+    const camX = cameraDoJogo ? cameraDoJogo.renderX : 0;
+    contexto.save();
+    this.desenharCeu(contexto, cameraDoJogo, camX);
+    this.desenharSinalNasNuvens(contexto, cameraDoJogo, camX);
+    this.desenharPredios(contexto, cameraDoJogo, camX);
+    this.desenharTelhados(contexto, cameraDoJogo, camX);
+    this.desenharChuva(contexto, cameraDoJogo, camX);
+    if (this.lightningAlpha > 0.01) {
+      contexto.fillStyle = `rgba(241, 245, 249, ${this.lightningAlpha})`;
+      contexto.fillRect(0, 0, this.width, this.height);
+    }
+    contexto.restore();
+  }
+  // Desenha esta camada na posição original da composição.
+  desenharCeu(contexto, cameraDoJogo, camX) {
+    const skyGrad = contexto.createLinearGradient(0, 0, 0, this.height);
+    skyGrad.addColorStop(0, estiloVisual.gradiente1);
+    skyGrad.addColorStop(0.5, estiloVisual.gradiente2);
+    skyGrad.addColorStop(1, estiloVisual.gradiente3);
+    contexto.fillStyle = skyGrad;
+    contexto.fillRect(0, 0, this.width, this.height);
+  }
+  // Desenha esta camada na posição original da composição.
+  desenharSinalNasNuvens(contexto, cameraDoJogo, camX) {
+    contexto.save();
     const targetCloudX = 410 - camX * 0.12;
     const targetCloudY = 130;
     const signalOriginX = 725 - camX * 0.25;
     const signalOriginY = this.height - 75;
-
-    // A. Dark textured cloud bank behind the signal
-    ctx.save();
-    ctx.fillStyle = '#0b0f19';
-    ctx.beginPath();
-    ctx.ellipse(targetCloudX, targetCloudY, 190, 82, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#161f30';
-    ctx.beginPath();
-    ctx.ellipse(targetCloudX - 50, targetCloudY - 18, 130, 56, 0, 0, Math.PI * 2);
-    ctx.ellipse(targetCloudX + 55, targetCloudY + 12, 140, 60, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Dark turbulent cloud wisps
-    ctx.fillStyle = '#0d1525';
-    ctx.beginPath();
-    ctx.ellipse(targetCloudX - 85, targetCloudY + 22, 95, 38, 0, 0, Math.PI * 2);
-    ctx.ellipse(targetCloudX + 90, targetCloudY - 22, 100, 42, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-
-    // B. Searchlight Volumetric Beam (projected from rooftop up into the cloud bank)
-    ctx.save();
-    ctx.globalAlpha *= LIGHTING.INTENSITY;
-    const beamGrad = ctx.createLinearGradient(
-      signalOriginX,
-      signalOriginY,
-      targetCloudX,
-      targetCloudY
-    );
-    beamGrad.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
-    beamGrad.addColorStop(0.12, 'rgba(254, 240, 138, 0.55)');
-    beamGrad.addColorStop(0.45, 'rgba(250, 204, 21, 0.25)');
-    beamGrad.addColorStop(0.85, 'rgba(253, 224, 71, 0.35)');
-    beamGrad.addColorStop(1, 'rgba(254, 249, 195, 0.5)');
-
-    ctx.fillStyle = beamGrad;
-    ctx.beginPath();
-    // Origin at projector housing
-    ctx.moveTo(signalOriginX - 8, signalOriginY);
-    // Expanding up-left to encompass the projected illuminated oval on clouds
-    ctx.lineTo(targetCloudX - 110, targetCloudY + 25);
-    ctx.lineTo(targetCloudX + 105, targetCloudY + 45);
-    ctx.lineTo(signalOriginX + 8, signalOriginY);
-    ctx.closePath();
-    ctx.fill();
-
-    // Soft volumetric outer halo
-    ctx.shadowColor = 'rgba(254, 240, 138, 0.3)';
-    ctx.shadowBlur = 18;
-    ctx.fill();
-    ctx.restore();
-
-    // C. Searchlight Projector on the Rooftop (detailed apparatus)
-    ctx.save();
-    // Heavy industrial tripod base
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath();
-    ctx.moveTo(signalOriginX - 14, signalOriginY + 16);
-    ctx.lineTo(signalOriginX, signalOriginY + 4);
-    ctx.lineTo(signalOriginX + 14, signalOriginY + 16);
-    ctx.lineTo(signalOriginX + 10, signalOriginY + 16);
-    ctx.lineTo(signalOriginX, signalOriginY + 6);
-    ctx.lineTo(signalOriginX - 10, signalOriginY + 16);
-    ctx.closePath();
-    ctx.fill();
-
-    // Swivel mount yoke
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(signalOriginX - 10, signalOriginY + 2, 20, 5);
-
-    // Angled projector barrel drum
-    ctx.fillStyle = '#334155';
-    ctx.beginPath();
-    ctx.roundRect(signalOriginX - 8, signalOriginY - 5, 16, 12, 3);
-    ctx.fill();
-
-    ctx.globalAlpha *= LIGHTING.INTENSITY;
-    // Glowing front projector lens glint
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = '#facc15';
-    ctx.shadowBlur = 16;
-    ctx.beginPath();
-    ctx.arc(signalOriginX - 2, signalOriginY - 2, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-
-    // D. Luminous Projected Golden-Ivory Spotlight on Clouds
-    ctx.save();
-    ctx.globalAlpha *= LIGHTING.INTENSITY;
-    ctx.translate(targetCloudX, targetCloudY);
-
-    // Atmospheric warm golden halo
-    ctx.shadowColor = 'rgba(250, 204, 21, 0.75)';
-    ctx.shadowBlur = 28;
-
-    // Glowing radiant spotlight oval (white hot core -> rich golden-amber halo)
-    const ovalGrad = ctx.createRadialGradient(0, 0, 12, 0, 0, 116);
-    ovalGrad.addColorStop(0, '#ffffff');
-    ovalGrad.addColorStop(0.28, '#fef9c3');
-    ovalGrad.addColorStop(0.65, '#fef08a');
-    ovalGrad.addColorStop(0.88, '#facc15');
-    ovalGrad.addColorStop(0.97, '#eab308');
-    ovalGrad.addColorStop(1, 'rgba(202, 138, 4, 0.2)');
-
-    ctx.fillStyle = ovalGrad;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 114, 66, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Bright illuminated rim
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // E. Iconic Classic Bat Silhouette (deep jet-black shadow projected inside the light)
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#060a12'; // Deepest midnight black matching reference
-
-    ctx.beginPath();
-    // Head notch between ears
-    ctx.moveTo(0, -13);
-    // Left ear
-    ctx.lineTo(-4, -27);
-    ctx.lineTo(-9, -17);
-    // Left top wing arch
-    ctx.bezierCurveTo(-32, -22, -60, -32, -88, -26);
-    // Left outer wing tip
-    ctx.bezierCurveTo(-97, -12, -93, 7, -80, 17);
-    // Left outer scallop
-    ctx.bezierCurveTo(-73, 7, -60, 7, -49, 21);
-    // Left middle scallop
-    ctx.bezierCurveTo(-41, 10, -28, 10, -16, 23);
-    // Center tail point
-    ctx.bezierCurveTo(-8, 19, -4, 28, 0, 36);
-    // Right middle scallop
-    ctx.bezierCurveTo(4, 28, 8, 19, 16, 23);
-    ctx.bezierCurveTo(28, 10, 41, 10, 49, 21);
-    // Right outer scallop
-    ctx.bezierCurveTo(60, 7, 73, 7, 80, 17);
-    // Right outer wing tip
-    ctx.bezierCurveTo(93, 7, 97, -12, 88, -26);
-    // Right top wing arch back to head
-    ctx.bezierCurveTo(60, -32, 32, -22, 9, -17);
-    // Right ear
-    ctx.lineTo(4, -27);
-    ctx.lineTo(0, -13);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.restore();
-    ctx.restore();
-
+    this.desenharNuvens(contexto, targetCloudX, targetCloudY, signalOriginX, signalOriginY);
+    this.desenharFeixe(contexto, targetCloudX, targetCloudY, signalOriginX, signalOriginY);
+    this.desenharRefletor(contexto, targetCloudX, targetCloudY, signalOriginX, signalOriginY);
+    contexto.save();
+    contexto.globalAlpha *= LIGHTING.INTENSITY;
+    contexto.translate(targetCloudX, targetCloudY);
+    contexto.shadowColor = estiloVisual.brilho4;
+    contexto.shadowBlur = 28;
+    const ovalGrad = contexto.createRadialGradient(0, 0, 12, 0, 0, 116);
+    ovalGrad.addColorStop(0, estiloVisual.gradiente5);
+    ovalGrad.addColorStop(0.28, estiloVisual.gradiente6);
+    ovalGrad.addColorStop(0.65, estiloVisual.gradiente7);
+    ovalGrad.addColorStop(0.88, estiloVisual.gradiente8);
+    ovalGrad.addColorStop(0.97, estiloVisual.gradiente9);
+    ovalGrad.addColorStop(1, estiloVisual.gradiente10);
+    contexto.fillStyle = ovalGrad;
+    contexto.beginPath();
+    contexto.ellipse(0, 0, 114, 66, 0, 0, Math.PI * 2);
+    contexto.fill();
+    contexto.strokeStyle = estiloVisual.contorno11;
+    contexto.lineWidth = 3;
+    contexto.stroke();
+    contexto.shadowBlur = 0;
+    contexto.fillStyle = estiloVisual.preenchimento12;
+    contexto.beginPath();
+    contexto.moveTo(0, -13);
+    contexto.lineTo(-4, -27);
+    contexto.lineTo(-9, -17);
+    contexto.bezierCurveTo(-32, -22, -60, -32, -88, -26);
+    contexto.bezierCurveTo(-97, -12, -93, 7, -80, 17);
+    contexto.bezierCurveTo(-73, 7, -60, 7, -49, 21);
+    contexto.bezierCurveTo(-41, 10, -28, 10, -16, 23);
+    contexto.bezierCurveTo(-8, 19, -4, 28, 0, 36);
+    contexto.bezierCurveTo(4, 28, 8, 19, 16, 23);
+    contexto.bezierCurveTo(28, 10, 41, 10, 49, 21);
+    contexto.bezierCurveTo(60, 7, 73, 7, 80, 17);
+    contexto.bezierCurveTo(93, 7, 97, -12, 88, -26);
+    contexto.bezierCurveTo(60, -32, 32, -22, 9, -17);
+    contexto.lineTo(4, -27);
+    contexto.lineTo(0, -13);
+    contexto.closePath();
+    contexto.fill();
+    contexto.restore();
+    contexto.restore();
+  }
+  // Desenha esta camada na posição original da composição.
+  desenharPredios(contexto, cameraDoJogo, camX) {
     // 3. Distant Gotham Skyline with Parallax
     const parallaxSkyline = camX * 0.25;
-    ctx.fillStyle = '#090d16';
-    for (const b of this.buildings) {
-      const bx = b.x - parallaxSkyline;
-      const by = this.height - b.h;
-      ctx.fillRect(bx, by, b.w, b.h);
-
-      // Lit yellow windows
-      ctx.fillStyle = 'rgba(254, 240, 138, 0.45)';
+    contexto.fillStyle = estiloVisual.preenchimento13;
+    for (const elementoAtual of this.buildings) {
+      const bx = elementoAtual.x - parallaxSkyline;
+      const by = this.height - elementoAtual.h;
+      contexto.fillRect(bx, by, elementoAtual.w, elementoAtual.h);
+      contexto.fillStyle = estiloVisual.preenchimento14;
       for (let wy = by + 12; wy < this.height - 20; wy += 22) {
-        for (let wx = b.x + 6; wx < b.x + b.w - 10; wx += 14) {
-          if ((Math.sin(wx * 11 + wy * 17) > 0.35)) {
-            ctx.fillRect(wx - parallaxSkyline, wy, 4, 6);
+        for (let wx = elementoAtual.x + 6; wx < elementoAtual.x + elementoAtual.w - 10; wx += 14) {
+          if (Math.sin(wx * 11 + wy * 17) > 0.35) {
+            contexto.fillRect(wx - parallaxSkyline, wy, 4, 6);
           }
         }
       }
-      ctx.fillStyle = '#090d16';
+      contexto.fillStyle = estiloVisual.preenchimento13;
     }
-
-    // 4. Midground Silhouetted Industrial Pipes & Rooftops
+  }
+  // Desenha esta camada na posição original da composição.
+  desenharTelhados(contexto, cameraDoJogo, camX) {
     const parallaxMid = camX * 0.55;
-    ctx.fillStyle = '#111827';
-    ctx.fillRect(0 - parallaxMid, this.height - 80, this.width * 2, 80);
-
-    // 5. Rain Streaks
-    ctx.strokeStyle = 'rgba(147, 197, 253, 0.4)';
-    ctx.lineWidth = 1.2;
+    contexto.fillStyle = estiloVisual.preenchimento16;
+    contexto.fillRect(0 - parallaxMid, this.height - 80, this.width * 2, 80);
+  }
+  // Desenha esta camada na posição original da composição.
+  desenharChuva(contexto, cameraDoJogo, camX) {
+    contexto.strokeStyle = estiloVisual.contorno17;
+    contexto.lineWidth = 1.2;
     for (const drop of this.rainDrops) {
-      ctx.beginPath();
-      ctx.moveTo(drop.x, drop.y);
-      ctx.lineTo(drop.x - 4, drop.y + drop.len);
-      ctx.stroke();
+      contexto.beginPath();
+      contexto.moveTo(drop.x, drop.y);
+      contexto.lineTo(drop.x - 4, drop.y + drop.len);
+      contexto.stroke();
     }
-
-    // 6. Lightning Flash
-    if (this.lightningAlpha > 0.01) {
-      ctx.fillStyle = `rgba(241, 245, 249, ${this.lightningAlpha})`;
-      ctx.fillRect(0, 0, this.width, this.height);
-    }
-
-    ctx.restore();
+  }
+  desenharNuvens(contexto, targetCloudX, targetCloudY, signalOriginX, signalOriginY) {
+    contexto.save();
+    contexto.fillStyle = estiloVisual.preenchimento18;
+    contexto.beginPath();
+    contexto.ellipse(targetCloudX, targetCloudY, 190, 82, 0, 0, Math.PI * 2);
+    contexto.fill();
+    contexto.fillStyle = estiloVisual.preenchimento19;
+    contexto.beginPath();
+    contexto.ellipse(targetCloudX - 50, targetCloudY - 18, 130, 56, 0, 0, Math.PI * 2);
+    contexto.ellipse(targetCloudX + 55, targetCloudY + 12, 140, 60, 0, 0, Math.PI * 2);
+    contexto.fill();
+    contexto.fillStyle = estiloVisual.preenchimento20;
+    contexto.beginPath();
+    contexto.ellipse(targetCloudX - 85, targetCloudY + 22, 95, 38, 0, 0, Math.PI * 2);
+    contexto.ellipse(targetCloudX + 90, targetCloudY - 22, 100, 42, 0, 0, Math.PI * 2);
+    contexto.fill();
+    contexto.restore();
+  }
+  desenharFeixe(contexto, targetCloudX, targetCloudY, signalOriginX, signalOriginY) {
+    contexto.save();
+    contexto.globalAlpha *= LIGHTING.INTENSITY;
+    const beamGrad = contexto.createLinearGradient(signalOriginX, signalOriginY, targetCloudX, targetCloudY);
+    beamGrad.addColorStop(0, estiloVisual.gradiente21);
+    beamGrad.addColorStop(0.12, estiloVisual.gradiente22);
+    beamGrad.addColorStop(0.45, estiloVisual.gradiente23);
+    beamGrad.addColorStop(0.85, estiloVisual.gradiente24);
+    beamGrad.addColorStop(1, estiloVisual.gradiente25);
+    contexto.fillStyle = beamGrad;
+    contexto.beginPath();
+    contexto.moveTo(signalOriginX - 8, signalOriginY);
+    contexto.lineTo(targetCloudX - 110, targetCloudY + 25);
+    contexto.lineTo(targetCloudX + 105, targetCloudY + 45);
+    contexto.lineTo(signalOriginX + 8, signalOriginY);
+    contexto.closePath();
+    contexto.fill();
+    contexto.shadowColor = estiloVisual.brilho26;
+    contexto.shadowBlur = 18;
+    contexto.fill();
+    contexto.restore();
+  }
+  desenharRefletor(contexto, targetCloudX, targetCloudY, signalOriginX, signalOriginY) {
+    contexto.save();
+    contexto.fillStyle = estiloVisual.preenchimento27;
+    contexto.beginPath();
+    contexto.moveTo(signalOriginX - 14, signalOriginY + 16);
+    contexto.lineTo(signalOriginX, signalOriginY + 4);
+    contexto.lineTo(signalOriginX + 14, signalOriginY + 16);
+    contexto.lineTo(signalOriginX + 10, signalOriginY + 16);
+    contexto.lineTo(signalOriginX, signalOriginY + 6);
+    contexto.lineTo(signalOriginX - 10, signalOriginY + 16);
+    contexto.closePath();
+    contexto.fill();
+    contexto.fillStyle = estiloVisual.preenchimento28;
+    contexto.fillRect(signalOriginX - 10, signalOriginY + 2, 20, 5);
+    contexto.fillStyle = estiloVisual.preenchimento29;
+    contexto.beginPath();
+    contexto.roundRect(signalOriginX - 8, signalOriginY - 5, 16, 12, 3);
+    contexto.fill();
+    contexto.globalAlpha *= LIGHTING.INTENSITY;
+    contexto.fillStyle = estiloVisual.gradiente5;
+    contexto.shadowColor = estiloVisual.gradiente8;
+    contexto.shadowBlur = 16;
+    contexto.beginPath();
+    contexto.arc(signalOriginX - 2, signalOriginY - 2, 6, 0, Math.PI * 2);
+    contexto.fill();
+    contexto.restore();
   }
 }

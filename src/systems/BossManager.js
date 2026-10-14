@@ -1,49 +1,29 @@
-import { JokerBoss } from '../entities/villains/JokerBoss.js';
-import { GAME } from '../utils/constants.js';
-/**
- * ============================================================================
- * @file BossManager.js
- * @category POO - Gerenciador de Encontros de Chefes (Lifecycle Coordinator & Factory)
- * ============================================================================
- * CONCEITOS DE PROGRAMAÇÃO ORIENTADA A OBJETOS (POO):
- * 
- * 1. GERENCIADOR DE CICLO DE VIDA (Lifecycle Coordinator):
- *    Coordena a entrada em cena, temporizador de introdução ("WARNING: BOSS HAS ENTERED"),
- *    rastreamento de vida e detecção de derrota do arqui-inimigo ativo.
- * 
- * 2. PADRÃO FACTORY METHOD (Fábrica de Chefes):
- *    O método spawnBoss() instancia a subclasse polimórfica correspondente ao estágio
- *    (Scarecrow para o nível 1, Harley Quinn para o 2, Two-Face para o 3).
- * 
- * 3. ENCAPSULAMENTO DE ESTADO DO CHEFE:
- *    Isola a instância do chefe ativo (this.boss) e fornece métodos seguros
- *    de reset e consulta.
- * ============================================================================
- */
+// Este arquivo cuida de controlar a sequência de chefões e suas apresentações.
+import { APARENCIA } from "../config/configuracao.js";
 
-import { Scarecrow } from '../entities/villains/Scarecrow.js';
-import { HarleyQuinn } from '../entities/villains/HarleyQuinn.js';
-import { TwoFace } from '../entities/villains/TwoFace.js';
-
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+import { JokerBoss } from "../entities/villains/JokerBoss.js";
+import { GAME } from "../config/configuracao.js";
+import { Scarecrow } from "../entities/villains/Scarecrow.js";
+import { HarleyQuinn } from "../entities/villains/HarleyQuinn.js";
+import { TwoFace } from "../entities/villains/TwoFace.js";
+const estiloVisual = APARENCIA.BossManager;
+// ===== COMPORTAMENTO =====
 export class BossManager {
-  /**
-   * CONSTRUTOR:
-   * Inicializa o estado de monitoramento de encontros de chefes.
-   */
+  // Recebe as dependências e prepara o estado inicial deste componente.
   constructor() {
-    this.boss = null;          // Instância polimórfica do chefe ativo (Character)
-    this.bossSpawned = false;  // Flag de surgimento
-    this.bossDefeated = false; // Flag de derrota confirmada
+    this.boss = null;
+    this.bossSpawned = false;
+    this.bossDefeated = false;
     this.deathTimer = GAME.DEATH_ANIMATION_FRAMES;
     this.bossIndex = 0;
     this.bossTypes = [];
-    this.introTimer = 0;       // Temporizador da faixa de aviso dramático
+    this.introTimer = 0;
   }
-
   /**
-   * [POO - RESET DE ESTADO / LIMPEZA DE CICLO]
-   * Zera as variáveis de controle para transição de estágios ou reinício de jogo.
-   */
+  * [POO - RESET DE ESTADO / LIMPEZA DE CICLO]
+  * Zera as variáveis de controle para transição de estágios ou reinício de jogo.
+  */
   reset() {
     this.deathTimer = GAME.DEATH_ANIMATION_FRAMES;
     this.bossIndex = 0;
@@ -53,42 +33,34 @@ export class BossManager {
     this.bossDefeated = false;
     this.introTimer = 0;
   }
-
-  /**
-   * [POO - FÁBRICA POLIMÓRFICA (FACTORY METHOD)]
-   * Cria o chefe correto baseado na configuração do estágio.
-   *
-   * @param {Object} levelConfig - Configuração da fase ativa
-   * @param {number} worldWidth - Largura do mundo para posicionamento
-   * @param {number} worldHeight - Altura do mundo para posicionamento
-   */
   spawnBoss(levelConfig, worldWidth = 900, worldHeight = 500) {
     if (this.bossSpawned) return;
-
     this.bossTypes = levelConfig.bosses || [levelConfig.boss];
     this.bossIndex = 0;
     this.worldWidth = worldWidth;
     this.worldHeight = worldHeight;
     this._spawnCurrentBoss();
   }
-
   _spawnCurrentBoss() {
-    const factories = { Joker: JokerBoss, Scarecrow, HarleyQuinn, TwoFace };
+    const factories = {
+      Joker: JokerBoss,
+      Scarecrow,
+      HarleyQuinn,
+      TwoFace
+    };
     const Boss = factories[this.bossTypes[this.bossIndex]] || Scarecrow;
-    this.boss = new Boss({x: this.worldWidth - 140, y: this.worldHeight - 170});
+    this.boss = new Boss({
+      x: this.worldWidth - 140,
+      y: this.worldHeight - 170
+    });
     this.bossSpawned = true;
     this.bossDefeated = false;
     this.deathTimer = GAME.DEATH_ANIMATION_FRAMES;
     this.introTimer = 100;
   }
-
-  /**
-   * Updates boss status and checks for defeat.
-   * @param {Function} onBossDefeated
-   */
+  // Recebe a atualização atual e avança o estado, sem redesenhar a tela.
   update(onBossDefeated, onBossChanged = null) {
     if (this.introTimer > 0) this.introTimer--;
-
     if (this.boss && !this.boss.alive && !this.bossDefeated) {
       if (this.deathTimer-- > 0) return;
       if (this.bossIndex + 1 < this.bossTypes.length) {
@@ -103,38 +75,28 @@ export class BossManager {
       }
     }
   }
-
-  /**
-   * Renders the dramatic "A MIGHTY FOE APPEARS!" Cuphead-style boss splash when entering.
-   * @param {CanvasRenderingContext2D} ctx
-   * @param {number} canvasWidth
-   * @param {number} canvasHeight
-   */
-  drawIntro(ctx, canvasWidth = 900, canvasHeight = 500) {
+  drawIntro(contexto, canvasWidth = 900, canvasHeight = 500) {
     if (this.introTimer <= 0 || !this.boss) return;
-
-    ctx.save();
-    const alpha = Math.min(1, this.introTimer / 30);
-    ctx.globalAlpha = alpha;
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.fillRect(0, canvasHeight / 2 - 45, canvasWidth, 90);
-
-    ctx.strokeStyle = '#eab308';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(0, canvasHeight / 2 - 45); ctx.lineTo(canvasWidth, canvasHeight / 2 - 45);
-    ctx.moveTo(0, canvasHeight / 2 + 45); ctx.lineTo(canvasWidth, canvasHeight / 2 + 45);
-    ctx.stroke();
-
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '900 28px "Arial Black", Impact, sans-serif';
-    ctx.fillStyle = '#fef08a';
-    ctx.shadowColor = '#dc2626';
-    ctx.shadowBlur = 10;
-    ctx.fillText(`ATENÇÃO: ${this.boss.name.toUpperCase()} CHEGOU!`, canvasWidth / 2, canvasHeight / 2);
-
-    ctx.restore();
+    contexto.save();
+    const opacidade = Math.min(1, this.introTimer / 30);
+    contexto.globalAlpha = opacidade;
+    contexto.fillStyle = estiloVisual.preenchimento1;
+    contexto.fillRect(0, canvasHeight / 2 - 45, canvasWidth, 90);
+    contexto.strokeStyle = estiloVisual.contorno2;
+    contexto.lineWidth = 2.5;
+    contexto.beginPath();
+    contexto.moveTo(0, canvasHeight / 2 - 45);
+    contexto.lineTo(canvasWidth, canvasHeight / 2 - 45);
+    contexto.moveTo(0, canvasHeight / 2 + 45);
+    contexto.lineTo(canvasWidth, canvasHeight / 2 + 45);
+    contexto.stroke();
+    contexto.textAlign = "center";
+    contexto.textBaseline = "middle";
+    contexto.font = estiloVisual.fonte1;
+    contexto.fillStyle = estiloVisual.preenchimento3;
+    contexto.shadowColor = estiloVisual.brilho4;
+    contexto.shadowBlur = 10;
+    contexto.fillText(`ATENÇÃO: ${this.boss.name.toUpperCase()} CHEGOU!`, canvasWidth / 2, canvasHeight / 2);
+    contexto.restore();
   }
 }

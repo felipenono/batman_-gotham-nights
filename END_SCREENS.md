@@ -1,6 +1,6 @@
 # Telas de vitória e derrota
 
-As duas telas usam `EndGameScene`, a mesma Gotham 2D e a mesma logo do lobby. Os estilos ficam em `src/styles/end-game.css`. Textos, cores, músicas, tempos, clima e botões ficam em `LOBBY.endScreens`, no arquivo `src/config/lobby.js`.
+As duas telas usam `EndGameScene`, a mesma Gotham 2D e a mesma logo do lobby. Os estilos ficam em `src/styles/end-game.css`. Textos, cores, músicas, tempos, clima e botões ficam em `LOBBY.endScreens`, no arquivo `src/config/configuracao.js`.
 
 ## Chamar a partir do jogo
 

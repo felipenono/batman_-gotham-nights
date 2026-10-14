@@ -1,57 +1,27 @@
-/**
- * ============================================================================
- * @file Scarecrow.js
- * @category POO - Subclasse de Chefe (Especialização de Character / Boss Pattern)
- * ============================================================================
- * CONCEITOS DE PROGRAMAÇÃO ORIENTADA A OBJETOS (POO):
- * 
- * 1. HERANÇA E ESPECIALIZAÇÃO DE CHEFE:
- *    Scarecrow herda de Character, mas sinaliza 'isBoss = true'.
- *    Graças a essa propriedade, o método takeDamage() polimórfico confere
- *    janelas de invulnerabilidade e aciona barra de vida dedicada no HUD.
- * 
- * 2. ENCAPSULAMENTO DE ESTADOS DE COMBATE:
- *    Encapsula o controle de três armas distintas:
- *    - 'smokeCooldown': nuvens tóxicas flutuantes (FearSmoke).
- *    - 'bombCooldown': cápsulas explosivas em arco parabólico (GasBomb).
- *    - 'auraTimer': ciclo de 20 segundos para ativar a aura de histeria coletiva
- *      que inverte os controles do Batman.
- * 
- * 3. POLIMORFISMO DE IA E DESENHO:
- *    - updateAI() implementa perseguição, patrulha, saltos e disparo duplo.
- *    - draw() desenha a máscara de juta costurada, olhos luminosos e névoa tóxica.
- * ============================================================================
- */
-
-import { Character } from '../Character.js';
-import { FearSmoke } from '../projectiles/FearSmoke.js';
-import { GasBomb } from '../projectiles/GasBomb.js';
-
+// Este arquivo cuida de controlar o Espantalho e seus ataques de medo.
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+import { Character } from "../Character.js";
+import { FearSmoke } from "../projectiles/FearSmoke.js";
+import { GasBomb } from "../projectiles/GasBomb.js";
+// ===== COMPORTAMENTO =====
 export class Scarecrow extends Character {
-  /**
-   * CONSTRUTOR:
-   * Instancia o Dr. Jonathan Crane como Chefe do Estágio 1.
-   *
-   * @param {Object} options
-   * @param {number} options.x - Posição X de entrada
-   * @param {number} options.y - Posição Y de entrada
-   */
-  constructor({ x = 700, y = 260 } = {}) {
+  // Recebe as dependências e prepara o estado inicial deste componente.
+  constructor({ x: posicaoX = 700, y: posicaoY = 260 } = {}) {
     // [POO - Herança]: Dimensões imponentes (60x110) e 100 HP para batalha de chefe
-    super({ x, y, w: 60, h: 110, maxHp: 100 });
-    this.spriteKey = 'scarecrow';
-
-    // [POO - Encapsulamento de Atributos de Chefe]
-    this.scoreType = 'Scarecrow';
-    this.name = 'Espantalho';
-    this.isBoss = true;      // Sinalizador polimórfico de chefe
-
-    // Temporizadores de ataques encapsulados
+    super({
+      x: posicaoX,
+      y: posicaoY,
+      w: 60,
+      h: 110,
+      maxHp: 100
+    });
+    this.spriteKey = "scarecrow";
+    this.scoreType = "Scarecrow";
+    this.name = "Espantalho";
+    this.isBoss = true;
     this.smokeCooldown = 110;
     this.bombCooldown = 190;
-    this.auraTimer = 1200;   // 20 segundos (1200 frames a 60fps)
-    this.auraActive = false;
-
+    this.auraTimer = 1200;
     // Cinemática de passos e patrulha
     this.floatCycle = 0;
     this.patrolTimer = 90;
@@ -61,113 +31,94 @@ export class Scarecrow extends Character {
     this.arenaWidth = 1100;
     this.wallEscapeTimer = 0;
   }
-
-  /**
-   * AI cycle managing FearSmoke, GasBombs, and the 20-second Fear Aura.
-   * @param {Object} player - Batman reference
-   * @param {Array} projectilesOut - Projectiles container
-   * @param {Function} onFearAura - Callback to trigger Batman fear inversion
-   */
-  updateAI(player, projectilesOut, onFearAura, playSfx = null) {
-    if (!this.alive || !player || !player.alive) return;
-
-    // Face player
-    const dx = player.x - this.x;
+  // Recebe o estado da partida e decide o próximo movimento ou ataque.
+  updateAI(jogador, projectilesOut, onFearAura, playSfx = null) {
+    if (!this.alive || !jogador || !jogador.alive) return;
+    const dx = jogador.x - this.x;
     this.facing = dx >= 0 ? 1 : -1;
-
-    // Velocity feeds Physics and the walk animator; do not overwrite world position.
-    if (this.hurtFlash > 0) { this.vx = 0; return; }
-    if (--this.patrolTimer <= 0) { this.patrolDirection *= -1; this.patrolTimer = 90; }
-    this.vx = Math.abs(dx) > 220 ? this.facing * this.speed :
-      Math.abs(dx) < 120 ? -this.facing * this.speed : this.patrolDirection * 0.8;
-    if (this.x < 16 && this.vx < 0) { this.wallEscapeTimer = 45; this.wallEscapeDirection = 1; }
-    if (this.x + this.w > this.arenaWidth - 16 && this.vx > 0) { this.wallEscapeTimer = 45; this.wallEscapeDirection = -1; }
-    if (this.wallEscapeTimer > 0) { this.vx = this.wallEscapeDirection * this.speed; this.wallEscapeTimer--; }
-    if (--this.jumpCooldown <= 0 && this.onGround && player.y + player.h < this.y + this.h - 45) {
+    if (this.hurtFlash > 0) {
+      this.vx = 0;
+      return;
+    }
+    if (--this.patrolTimer <= 0) {
+      this.patrolDirection *= -1;
+      this.patrolTimer = 90;
+    }
+    this.vx = Math.abs(dx) > 220 ? this.facing * this.speed : Math.abs(dx) < 120 ? -this.facing * this.speed : this.patrolDirection * 0.8;
+    if (this.x < 16 && this.vx < 0) {
+      this.wallEscapeTimer = 45;
+      this.wallEscapeDirection = 1;
+    }
+    if (this.x + this.w > this.arenaWidth - 16 && this.vx > 0) {
+      this.wallEscapeTimer = 45;
+      this.wallEscapeDirection = -1;
+    }
+    if (this.wallEscapeTimer > 0) {
+      this.vx = this.wallEscapeDirection * this.speed;
+      this.wallEscapeTimer--;
+    }
+    if (--this.jumpCooldown <= 0 && this.onGround && jogador.y + jogador.h < this.y + this.h - 45) {
       this.vy = -11;
       this.jumpCooldown = 120;
     }
-
-    // 1. Fear Aura special attack every 20 seconds
     this.auraTimer--;
     if (this.auraTimer <= 0) {
       this.auraTimer = 1200;
-      if (typeof playSfx === 'function') {
-        playSfx('fear_drone');
+      if (typeof playSfx === "function") {
+        playSfx("fear_drone");
       }
-      if (typeof onFearAura === 'function') {
-        onFearAura(180); // 3 seconds control inversion
+      if (typeof onFearAura === "function") {
+        onFearAura(180);
       }
       this.hurtFlash = 5;
     }
-
-    // 2. Fear Smoke attack
     this.smokeCooldown--;
     if (this.smokeCooldown <= 0) {
       this.smokeCooldown = 90 + Math.floor(Math.random() * 60);
-      this.castFearSmoke(player, projectilesOut, playSfx);
+      this.castFearSmoke(jogador, projectilesOut, playSfx);
     }
-
-    // 3. Gas Bomb attack
     this.bombCooldown--;
     if (this.bombCooldown <= 0) {
       this.bombCooldown = 180 + Math.floor(Math.random() * 60);
-      this.throwGasBomb(player, projectilesOut, playSfx);
+      this.throwGasBomb(jogador, projectilesOut, playSfx);
     }
   }
-
-  castFearSmoke(player, projectilesOut, playSfx = null) {
+  castFearSmoke(jogador, projectilesOut, playSfx = null) {
     this.attackTimer = 20;
     this.isAttacking = true;
-
-    if (typeof playSfx === 'function') {
-      playSfx('gas_hiss');
+    if (typeof playSfx === "function") {
+      playSfx("gas_hiss");
     }
-
     const originX = this.x + this.w / 2 + this.facing * 25;
     const originY = this.y + 40;
-
-    const dx = player.x - originX;
-    const dy = player.y - originY;
+    const dx = jogador.x - originX;
+    const dy = jogador.y - originY;
     const dist = Math.hypot(dx, dy) || 1;
-
-    const vx = (dx / dist) * 2.2;
-    const vy = (dy / dist) * 1.5;
-
-    projectilesOut.push(new FearSmoke(originX, originY, vx, vy));
+    const velocidadeX = dx / dist * 2.2;
+    const velocidadeY = dy / dist * 1.5;
+    projectilesOut.push(new FearSmoke(originX, originY, velocidadeX, velocidadeY));
   }
-
-  throwGasBomb(player, projectilesOut, playSfx = null) {
+  throwGasBomb(jogador, projectilesOut, playSfx = null) {
     this.attackTimer = 25;
     this.isAttacking = true;
-
-    if (typeof playSfx === 'function') {
-      playSfx('gas_bomb');
+    if (typeof playSfx === "function") {
+      playSfx("gas_bomb");
     }
-
     const originX = this.x + this.w / 2 + this.facing * 20;
     const originY = this.y + 35;
-
-    const dx = player.x - originX;
-    const vx = Math.sign(dx) * (5 + Math.random() * 2);
-    const vy = -7 - Math.random() * 2.5;
-
-    projectilesOut.push(new GasBomb(originX, originY, vx, vy));
+    const dx = jogador.x - originX;
+    const velocidadeX = Math.sign(dx) * (5 + Math.random() * 2);
+    const velocidadeY = -7 - Math.random() * 2.5;
+    projectilesOut.push(new GasBomb(originX, originY, velocidadeX, velocidadeY));
   }
-
-  update(dt = 1, world = null) {
-    this.arenaWidth = world?.width || this.arenaWidth;
-    super.update(dt, world);
-    this.floatCycle += 0.05 * dt;
+  // Recebe a atualização atual e avança o estado, sem redesenhar a tela.
+  update(passoTempo = 1, mundo = null) {
+    this.arenaWidth = mundo?.width || this.arenaWidth;
+    super.update(passoTempo, mundo);
+    this.floatCycle += 0.05 * passoTempo;
   }
-
-  /**
-   * Procedural drawing matching the reference image:
-   * Burlap sack mask with stitched X eyes and stitched mouth, wide-brim straw hat,
-   * brown tattered robe, rope belt, dark boots.
-   * @param {CanvasRenderingContext2D} ctx
-   */
-  draw(ctx) {
-    this.drawSprite(ctx);
+  // Recebe o contexto 2D e desenha o estado atual sem avançar o tempo.
+  draw(contexto) {
+    this.drawSprite(contexto);
   }
 }

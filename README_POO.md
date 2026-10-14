@@ -99,7 +99,7 @@ O polimorfismo permite que objetos de diferentes classes derivadas respondam à 
 - **`Level.js`**: Padrão *Composite & Builder*. Reúne o plano de fundo, plataformas e pontos de nascimento.
 
 ### 7. `src/audio/` — Sistema Modular de Som
-- **`AudioConfig.js`**: Configurações desacopladas de volume, tempos (BPM) e frequências sonoras.
+- **`src/config/configuracao.js`**: Configurações de volume, tempos (BPM) e frequências sonoras. `AudioConfig.js` preserva o caminho antigo por reexportação.
 - **`SoundEffects.js`**: Fábrica procedural de síntese sonora para cada golpe, risada e impacto.
 - **`MusicComposer.js`**: Compositor orquestral sintetizado em tempo real via Web Audio API.
 - **`AudioManager.js`**: Padrão *Façade*. Gerencia canais de mixagem (Master, BGM, SFX) e o sequenciador de compassos.

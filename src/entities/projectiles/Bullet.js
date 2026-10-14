@@ -1,67 +1,50 @@
-/**
- * @file Bullet.js
- * High-velocity firearm projectile used by Harley Quinn and Two-Face.
- */
+// Este arquivo cuida de mover e desenhar as balas.
+import { APARENCIA } from "../../config/configuracao.js";
 
-import { Projectile } from './Projectile.js';
-import { PROJECTILE } from '../../utils/constants.js';
-
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+import { Projectile } from "./Projectile.js";
+import { PROJECTILE } from "../../config/configuracao.js";
+const estiloVisual = APARENCIA.Bullet;
+// ===== COMPORTAMENTO =====
 export class Bullet extends Projectile {
-  /**
-   * @param {number} x
-   * @param {number} y
-   * @param {number} vx
-   * @param {number} vy
-   */
-  constructor(x, y, vx, vy) {
+  // Recebe as dependências e prepara o estado inicial deste componente.
+  constructor(posicaoX, posicaoY, velocidadeX, velocidadeY) {
     super({
-      x,
-      y,
+      x: posicaoX,
+      y: posicaoY,
       w: 16,
       h: 8,
-      vx,
-      vy,
+      vx: velocidadeX,
+      vy: velocidadeY,
       damage: 1,
       lifetime: 180,
-      owner: 'villain',
+      owner: "villain"
     });
     this.speed = PROJECTILE.BULLET_SPEED;
   }
-
-  /**
-   * Procedural drawing of spinning brass bullet with smoke tracer.
-   * @param {CanvasRenderingContext2D} ctx
-   */
-  draw(ctx) {
+  // Recebe o contexto 2D e desenha o estado atual sem avançar o tempo.
+  draw(contexto) {
     if (!this.alive) return;
-
-    ctx.save();
-    ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
-    ctx.rotate(Math.atan2(this.vy, this.vx));
-
-    // Muzzle smoke / fire tracer
-    const grad = ctx.createLinearGradient(-14, 0, 8, 0);
-    grad.addColorStop(0, 'rgba(239, 68, 68, 0)');
-    grad.addColorStop(0.5, 'rgba(249, 115, 22, 0.6)');
-    grad.addColorStop(1, 'rgba(251, 191, 36, 1)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(-12, -2, 14, 4);
-
-    // Glowing bullet slug
-    ctx.shadowColor = '#f59e0b';
-    ctx.shadowBlur = 6;
-    ctx.fillStyle = '#fef08a';
-    ctx.beginPath();
-    ctx.roundRect(-2, -3, 10, 6, 3);
-    ctx.fill();
-
-    // Hot tip
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(6, 0, 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
+    contexto.save();
+    contexto.translate(this.x + this.w / 2, this.y + this.h / 2);
+    contexto.rotate(Math.atan2(this.vy, this.vx));
+    const grad = contexto.createLinearGradient(-14, 0, 8, 0);
+    grad.addColorStop(0, estiloVisual.gradiente1);
+    grad.addColorStop(0.5, estiloVisual.gradiente2);
+    grad.addColorStop(1, estiloVisual.gradiente3);
+    contexto.fillStyle = grad;
+    contexto.fillRect(-12, -2, 14, 4);
+    contexto.shadowColor = estiloVisual.brilho4;
+    contexto.shadowBlur = 6;
+    contexto.fillStyle = estiloVisual.preenchimento5;
+    contexto.beginPath();
+    contexto.roundRect(-2, -3, 10, 6, 3);
+    contexto.fill();
+    contexto.shadowBlur = 0;
+    contexto.fillStyle = estiloVisual.preenchimento6;
+    contexto.beginPath();
+    contexto.arc(6, 0, 2, 0, Math.PI * 2);
+    contexto.fill();
+    contexto.restore();
   }
 }

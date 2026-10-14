@@ -1,137 +1,90 @@
-/**
- * ============================================================================
- * @file Input.js
- * @category POO - Camada de Abstração de Hardware (Encapsulamento de Teclado)
- * ============================================================================
- * CONCEITOS DE PROGRAMAÇÃO ORIENTADA A OBJETOS (POO):
- * 
- * 1. ABSTRAÇÃO DE HARDWARE (Hardware Abstraction Layer):
- *    Isola o resto do jogo das APIs de eventos do DOM (keydown/keyup).
- *    Os componentes do jogo consultam ações semânticas abstratas ('JUMP', 'SHOOT')
- *    em vez de códigos de tecla brutos ('ArrowUp', 'KeyX').
- * 
- * 2. ENCAPSULAMENTO DE ESTADO TEMPORAL:
- *    Mantém conjuntos de teclas privadas ('_keyDownBuffer', 'keysDown') e sincroniza
- *    com o loop do jogo no método update(), distinguindo cliques contínuos (isDown)
- *    de toques instantâneos no frame (justPressed / anyKeyPressed).
- * ============================================================================
- */
-
-const normalizeKey = key => key === 'Spacebar' ? ' ' : key.length === 1 ? key.toLowerCase() : key;
-
-import { KEYS } from '../utils/constants.js';
-
+// Este arquivo cuida de guardar as teclas pressionadas em cada atualização.
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+const normalizeKey = (chave) => chave === "Spacebar" ? " " : chave.length === 1 ? chave.toLowerCase() : chave;
+import { KEYS } from "../config/configuracao.js";
+// ===== COMPORTAMENTO =====
 export class Input {
   /**
-   * CONSTRUTOR:
-   * Inicializa os conjuntos (Sets) de monitoramento de teclas e conecta os ouvintes do DOM.
-   */
+  * CONSTRUTOR:
+  * Inicializa os conjuntos (Sets) de monitoramento de teclas e conecta os ouvintes do DOM.
+  */
+  // Recebe as dependências e prepara o estado inicial deste componente.
   constructor() {
     this.keysDown = new Set();
     this.keysPressedThisFrame = new Set();
     this._keyDownBuffer = new Set();
     this.resetVersion = 0;
-
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onKeyUp = this._onKeyUp.bind(this);
     this._onBlur = this._onBlur.bind(this);
-
-    window.addEventListener('keydown', this._onKeyDown);
-    window.addEventListener('keyup', this._onKeyUp);
-    window.addEventListener('blur', this._onBlur);
-    globalThis.document?.addEventListener('visibilitychange', this._onBlur);
+    window.addEventListener("keydown", this._onKeyDown);
+    window.addEventListener("keyup", this._onKeyUp);
+    window.addEventListener("blur", this._onBlur);
+    globalThis.document?.addEventListener("visibilitychange", this._onBlur);
   }
-
-  _onKeyDown(e) {
-    // Native screen buttons keep their Enter/Space activation.
-    if (e.target?.closest?.('button') && ['Enter', ' '].includes(e.key)) return;
-    // Prevent scrolling and default actions for gameplay keys
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Spacebar'].includes(e.key)) {
-      e.preventDefault();
+  _onKeyDown(eventoRecebido) {
+    if (eventoRecebido.target?.closest?.("button") && ["Enter", " "].includes(eventoRecebido.key)) return;
+    if ([
+      "ArrowUp",
+      "ArrowDown",
+      "ArrowLeft",
+      "ArrowRight",
+      " ",
+      "Spacebar"
+    ].includes(eventoRecebido.key)) {
+      eventoRecebido.preventDefault();
     }
-    if (e.repeat) return;
-    const key = e.code?.startsWith('Key') ? e.code.slice(3).toLowerCase() : normalizeKey(e.key);
-    if (!this.keysDown.has(normalizeKey(key))) this._keyDownBuffer.add(key);
-    this.keysDown.add(key);
+    if (eventoRecebido.repeat) return;
+    const chave = eventoRecebido.code?.startsWith("Key") ? eventoRecebido.code.slice(3).toLowerCase() : normalizeKey(eventoRecebido.key);
+    if (!this.keysDown.has(normalizeKey(chave))) this._keyDownBuffer.add(chave);
+    this.keysDown.add(chave);
   }
-
-  _onKeyUp(e) {
-    const key = e.code?.startsWith('Key') ? e.code.slice(3).toLowerCase() : normalizeKey(e.key);
-    this.keysDown.delete(key);
+  _onKeyUp(eventoRecebido) {
+    const chave = eventoRecebido.code?.startsWith("Key") ? eventoRecebido.code.slice(3).toLowerCase() : normalizeKey(eventoRecebido.key);
+    this.keysDown.delete(chave);
   }
-
   _onBlur() {
     this.resetVersion++;
     this.keysDown.clear();
     this._keyDownBuffer.clear();
     this.keysPressedThisFrame.clear();
   }
-
-  /**
-   * Called once at the beginning of each frame update.
-   */
+  // Recebe a atualização atual e avança o estado, sem redesenhar a tela.
   update() {
-    this.keysPressedThisFrame = new Set(this._keyDownBuffer);
+    this.keysPressedThisFrame.clear();
+    for (const tecla of this._keyDownBuffer) this.keysPressedThisFrame.add(tecla);
     this._keyDownBuffer.clear();
   }
-
-  /**
-   * Checks if any key mapped to the given action is currently held down.
-   * @param {string} action - Action key name from KEYS constants (e.g. 'LEFT', 'JUMP')
-   * @returns {boolean}
-   */
-  isDown(action) {
-    const list = KEYS[action];
+  isDown(acao) {
+    const list = KEYS[acao];
     if (!list) return false;
-    for (const key of list) {
-      if (this.keysDown.has(key)) return true;
+    for (const chave of list) {
+      if (this.keysDown.has(chave)) return true;
     }
     return false;
   }
-
-  /**
-   * Checks if any key mapped to the given action was pressed this current frame.
-   * @param {string} action - Action key name from KEYS constants
-   * @returns {boolean}
-   */
-  justPressed(action) {
-    const list = KEYS[action];
+  justPressed(acao) {
+    const list = KEYS[acao];
     if (!list) return false;
-    for (const key of list) {
-      if (this.keysPressedThisFrame.has(normalizeKey(key))) return true;
+    for (const chave of list) {
+      if (this.keysPressedThisFrame.has(normalizeKey(chave))) return true;
     }
     return false;
   }
-
-  /**
-   * Direct key check for special keys (e.g., 'Escape', 'Enter').
-   * @param {string} keyName
-   * @returns {boolean}
-   */
   isKeyJustPressed(keyName) {
     return this.keysPressedThisFrame.has(normalizeKey(keyName));
   }
-
-  /**
-   * Returns true if ANY key was pressed this frame.
-   * @returns {boolean}
-   */
   get anyKeyPressed() {
     return this.keysPressedThisFrame.size > 0;
   }
-
-  /**
-   * Returns true if ANY key is held down.
-   * @returns {boolean}
-   */
   get anyKeyDown() {
     return this.keysDown.size > 0;
   }
-
+  // Encerra os recursos desta instância para não deixar eventos ativos.
   destroy() {
-    window.removeEventListener('keydown', this._onKeyDown);
-    window.removeEventListener('keyup', this._onKeyUp);
-    window.removeEventListener('blur', this._onBlur);
-    globalThis.document?.removeEventListener('visibilitychange', this._onBlur);
+    window.removeEventListener("keydown", this._onKeyDown);
+    window.removeEventListener("keyup", this._onKeyUp);
+    window.removeEventListener("blur", this._onBlur);
+    globalThis.document?.removeEventListener("visibilitychange", this._onBlur);
   }
 }

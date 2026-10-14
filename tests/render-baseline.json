@@ -1,0 +1,19 @@
+{
+  "Level1Background:0": "b267f2458a0844567431e2f9c6f566e610e7fd82f86317f806b88794f83bc461",
+  "Level1Background:60": "6b005a3971b6280e4ddba8d00be00dc2eec9b9d1e01b3cdc260feaf1b8029cba",
+  "Level2Background:0": "88ce2183d889347d238c153c59de300ef2a5f2fe69ddbd5929f6dadec9174864",
+  "Level2Background:60": "9fc88bf4e56febab6325f0abf9cd8ebace66c36fec26f5c9f0d6a6eb44b2662f",
+  "Level3Background:0": "36826861c7ccc57c727c4671e6bc8863d35a6dda46a9645cf7e083f4a05ab241",
+  "Level3Background:60": "fc2b873d3beb29387626e7ab5d03ea13a64af735f1d4d31fcb3e2fd9d30d2c47",
+  "Platform:rooftop": "2b85141027cf7ace6ca274ef05d082fcbf814d5d65d6f6dc48f0ac2b44486c16",
+  "Platform:ac_unit": "5cc3fb5c4e5eb5a707dba65f6ee10bf5e72bafdfdcefa01d4f7164292ceb90af",
+  "Platform:pipe": "445dfe4177b8a3578af4b722e16385291472c9d861a329b8655c4c2090ce2043",
+  "Platform:casino": "9d4521a02e48a74b2404db527ec922a6c218520fc0f9e0ffe7874055daa47702",
+  "Platform:asylum": "ecfd8579cba4ed5d0b38d74405a7f28fdff4143a614d0cd9b81254025e88d802",
+  "Sprite:batman": "3840020d7e49cd101d9331630519cac6ce719e47af6882a3d8f02a8640c42439",
+  "Sprite:joker": "e4eb26f4939ed9a8f1edf40e8f85e0cb60d84c8cf2d2b476c185bcf6903cf87e",
+  "Sprite:penguin": "556cc42612edd07693b1d20e41895164a90c9fa3c97015d814912c6c0307db1a",
+  "Sprite:scarecrow": "15e4c64621c0a1f358ffcd9fadf68adfc8a21d8d6c8241b9b3fc81273f29405b",
+  "Sprite:harley_quinn": "68a10084b1a47146376ece4e9695051a143e831b36a551548762dc0bb9e9a362",
+  "Sprite:two_face": "3b17e4960d9aec2b62ec6b699f187ac84e30b59dea5f6fe20909b9d25bcd91c6"
+}

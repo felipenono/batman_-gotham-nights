@@ -1,74 +1,37 @@
-import { drawBatarang } from '../../utils/batSymbols.js';
-/**
- * ============================================================================
- * @file Batarang.js
- * @category POO - Subclasse Concreta de Projétil (Especialização do Ataque do Jogador)
- * ============================================================================
- * CONCEITOS DE PROGRAMAÇÃO ORIENTADA A OBJETOS (POO):
- * 
- * 1. HERANÇA EM DOIS NÍVEIS (Multi-level Inheritance):
- *    Entity (geometria 2D) -> Projectile (física de disparos) -> Batarang (arma do herói).
- * 
- * 2. ENCAPSULAMENTO DE PROPRIEDADES FIXAS:
- *    Define via super() os atributos imutáveis do projétil:
- *    - Dimensões aerodinâmicas (22x14 pixels).
- *    - Dano configurado pelas constantes do sistema.
- *    - Autoria explícita 'batman' para proteção contra dano acidental no jogador.
- * 
- * 3. POLIMORFISMO (Polymorphism):
- *    Sobrescreve o método draw() para desenhar a geometria vetorial clássica do morcego
- *    rotacionando dinamicamente em alta velocidade (spinSpeed: 0.45 rad/frame).
- * ============================================================================
- */
-
-import { Projectile } from './Projectile.js';
-import { PROJECTILE } from '../../utils/constants.js';
-
+// Este arquivo cuida de controlar o batarangue e seu limite de lançamentos.
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+import { drawBatarang } from "../../utils/batSymbols.js";
+import { Projectile } from "./Projectile.js";
+import { PROJECTILE } from "../../config/configuracao.js";
+// ===== COMPORTAMENTO =====
 export class Batarang extends Projectile {
-  /**
-   * CONSTRUTOR:
-   * Instancia um batarang em movimento arremessado pelo Batman.
-   *
-   * @param {number} x - Posição horizontal de disparo
-   * @param {number} y - Posição vertical de disparo
-   * @param {number} vx - Componente horizontal do vetor velocidade
-   * @param {number} vy - Componente vertical do vetor velocidade
-   */
-  constructor(x, y, vx, vy) {
+  // Recebe as dependências e prepara o estado inicial deste componente.
+  constructor(posicaoX, posicaoY, velocidadeX, velocidadeY) {
     // [POO - Herança]: Passa a configuração fixa para a superclasse Projectile
     super({
-      x,
-      y,
+      x: posicaoX,
+      y: posicaoY,
       w: 24,
       h: 11,
-      vx,
-      vy,
+      vx: velocidadeX,
+      vy: velocidadeY,
       damage: PROJECTILE.BATARANG_DAMAGE,
       lifetime: 140,
-      owner: 'batman', // Autoria do jogador
+      owner: "batman"
     });
-
-    // Taxa de giro angular acelerada
     this.spinSpeed = 0.45;
   }
-
-  static available(projectiles) {
-    const active = projectiles.filter(p => p instanceof Batarang && p.owner === 'batman' && p.alive).length;
+  static available(projeteis) {
+    const active = projeteis.filter((elemento) => elemento instanceof Batarang && elemento.owner === "batman" && elemento.alive).length;
     return Math.max(0, PROJECTILE.BATARANG_MAX_ACTIVE - active);
   }
-
-  /**
-   * Procedural rendering of the spinning golden Batarang.
-   * @param {CanvasRenderingContext2D} ctx
-   */
-  draw(ctx) {
+  // Recebe o contexto 2D e desenha o estado atual sem avançar o tempo.
+  draw(contexto) {
     if (!this.alive) return;
-
-    ctx.save();
-    ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
-    ctx.rotate(this.spin);
-
-    drawBatarang(ctx);
-    ctx.restore();
+    contexto.save();
+    contexto.translate(this.x + this.w / 2, this.y + this.h / 2);
+    contexto.rotate(this.spin);
+    drawBatarang(contexto);
+    contexto.restore();
   }
 }

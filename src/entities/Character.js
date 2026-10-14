@@ -1,86 +1,46 @@
-/**
- * ============================================================================
- * @file Character.js
- * @category POO - Subclasse Abstrata Intermediária (Especialização de Entity)
- * ============================================================================
- * CONCEITOS DE PROGRAMAÇÃO ORIENTADA A OBJETOS (POO):
- * 
- * 1. HERANÇA (Inheritance):
- *    Estende a superclasse "Entity" usando a palavra-chave 'extends'.
- *    Herda automaticamente x, y, w, h, vx, vy, bounds e intersects.
- * 
- * 2. ENCAPSULAMENTO (Encapsulation):
- *    Gerencia o ciclo biológico do personagem: pontos de vida (hp, maxHp),
- *    estados transitórios (invulnerable, hurtFlash, onGround, isAttacking).
- *    O dano é aplicado de forma controlada através do método takeDamage().
- * 
- * 3. POLIMORFISMO (Polymorphism):
- *    Especializa update() para os temporizadores biológicos. A translação dos
- *    personagens pertence a Physics, que também resolve as colisões.
- * ============================================================================
- */
-
-import { Entity } from './Entity.js';
-import { SpriteAnimator } from '../utils/SpriteAnimator.js';
-
+// Este arquivo cuida de compartilhar vida, dano e animação entre personagens.
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+import { Entity } from "./Entity.js";
+import { SpriteAnimator } from "../utils/SpriteAnimator.js";
+// ===== COMPORTAMENTO =====
 export class Character extends Entity {
-  /**
-   * CONSTRUTOR:
-   * Invoca super() para repassar geometria à superclasse Entity e inicializa
-   * atributos biológicos e de animação.
-   *
-   * @param {Object} options - Parâmetros de inicialização
-   * @param {number} options.x - Posição X inicial
-   * @param {number} options.y - Posição Y inicial
-   * @param {number} options.w - Largura corporal
-   * @param {number} options.h - Altura corporal
-   * @param {number} options.maxHp - Pontos de vida máximos
-   */
-  constructor({ x = 0, y = 0, w = 36, h = 64, maxHp = 100 } = {}) {
+  // Recebe as dependências e prepara o estado inicial deste componente.
+  constructor({ x: posicaoX = 0, y: posicaoY = 0, w: larguraObjeto = 36, h: alturaObjeto = 64, maxHp = 100 } = {}) {
     // [POO - Herança]: Chama o construtor da superclasse Entity
-    super({ x, y, w, h });
-
+    super({
+      x: posicaoX,
+      y: posicaoY,
+      w: larguraObjeto,
+      h: alturaObjeto
+    });
     // [POO - Atributos de Vida / Saúde (Encapsulamento)]
     this.animator = new SpriteAnimator();
     this.deathTimer = 0;
     this.maxHp = maxHp;
     this.hp = maxHp;
-
     // [POO - Atributos de Orientação e Estados Visuais]
-    this.facing = 1;        // Direção: 1 = direita, -1 = esquerda
-    this.hurtFlash = 0;     // Temporizador de feedback visual de impacto
-    this.invulnerable = 0;  // Temporizador de imunidade transitória após sofrer dano
-    this.onGround = false;  // Flag de contato com plataformas terrestres
-    this.walkCycle = 0;     // Contador senoidal para animação de passos
-    this.isAttacking = false;// Flag de postura de combate
-    this.attackTimer = 0;   // Temporizador de animação do ataque
-    this.isBoss = false;    // Diferencia chefes de capangas comuns na hierarquia
+    this.facing = 1;
+    this.hurtFlash = 0;
+    this.invulnerable = 0;
+    this.onGround = false;
+    this.walkCycle = 0;
+    this.isAttacking = false;
+    this.attackTimer = 0;
+    this.isBoss = false;
   }
-
-  /**
-   * [POO - ENCAPSULAMENTO E REGRAS DE NEGÓCIO: RECEBIMENTO DE DANO]
-   * Aplica dano de forma segura, evitando alterações arbitrárias diretas no hp.
-   * Avalia regras de imunidade e dispara a morte biológica se hp <= 0.
-   *
-   * @param {number} amount - Quantidade de dano sofrido
-   * @returns {boolean} True se o golpe penetrou as defesas e causou dano real
-   */
+  // Recebe o dano e informa se ele foi aplicado neste momento.
   takeDamage(amount) {
-    // Guarda de integridade: personagens mortos ou em invulnerabilidade ignoram dano
     if (!this.alive) return false;
     if (this.invulnerable > 0) return false;
-
     // Redução do estado interno de saúde
     this.hp -= amount;
-    this.hurtFlash = 10; // Sinaliza à camada gráfica para piscar em branco/vermelho
-
+    this.hurtFlash = 10;
     // Regra polimórfica: chefes recebem janela curta de invulnerabilidade
     if (this.isBoss) {
       this.invulnerable = 6;
     } else {
-      this.invulnerable = 0; // Inimigos normais tomam todo golpe sem descartar acertos
+      this.invulnerable = 0;
     }
-
     // Transição de estado para morte se HP esgotar
     if (this.hp <= 0) {
       this.hp = 0;
@@ -88,43 +48,31 @@ export class Character extends Entity {
     }
     return true;
   }
-
   /**
-   * [POO - ENCAPSULAMENTO / GETTER COMPUTADO DE PORCENTAGEM DE VIDA]
-   * Retorna a fração normalizada (0.0 a 1.0) para barras de vida (HUD).
-   *
-   * @returns {number} Fração entre 0 e 1
-   */
+  * [POO - ENCAPSULAMENTO / GETTER COMPUTADO DE PORCENTAGEM DE VIDA]
+  * Retorna a fração normalizada (0.0 a 1.0) para barras de vida (HUD).
+  *
+  * @returns {number} Fração entre 0 e 1
+  */
   get hpRatio() {
+    if (!Number.isFinite(this.maxHp) || this.maxHp <= 0) return 0;
     return Math.max(0, Math.min(1, this.hp / this.maxHp));
   }
-
-  /**
-   * [POO - POLIMORFISMO: SOBRESCRITA DE update]
-   * Delega a cinemática a Physics e processa os temporizadores
-   * vitais de invulnerabilidade, flash e ciclos de marcha.
-   *
-   * @param {number} dt - Delta time
-   * @param {Object} world - Contexto do cenário
-   */
-  drawSprite(ctx) { this.animator.draw(ctx, this); }
-
-  update(dt = 1, world = null) {
-    this.animator.update(this, dt);
-    // Physics integrates characters once and resolves their collisions.
-    // A second Entity.update here would move them off the resolved platforms.
-
-    // Decrementa contadores de estados temporais
+  drawSprite(contexto) {
+    this.animator.draw(contexto, this);
+  }
+  // Recebe a atualização atual e avança o estado, sem redesenhar a tela.
+  update(passoTempo = 1, mundo = null) {
+    this.animator.update(this, passoTempo);
     if (this.hurtFlash > 0) this.hurtFlash--;
     if (this.invulnerable > 0) this.invulnerable--;
     if (this.attackTimer > 0) {
       this.attackTimer--;
       if (this.attackTimer === 0) this.isAttacking = false;
     }
-
     // Atualiza ciclo de caminhada apenas se estiver em solo e em movimento
     if (Math.abs(this.vx) > 0.1 && this.onGround) {
-      this.walkCycle += 0.2 * dt;
+      this.walkCycle += 0.2 * passoTempo;
     } else {
       this.walkCycle = 0;
     }

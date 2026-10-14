@@ -1,64 +1,107 @@
-import { LOBBY } from '../config/lobby.js';
-
-/** Navegação de uma lista de botões nativos; eventos são removidos ao sair da tela. */
+// Este arquivo cuida de controlar teclado e controle nas telas finais.
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+import { LOBBY } from "../config/configuracao.js";
+import { controleConectado, direcaoDoControle } from "./GamepadInput.js";
+// ===== COMPORTAMENTO =====
 export class ScreenNavigation {
-  constructor(root, { activate, blocked, gesture, back }) {
-    this.root = root;
-    this.activate = activate; this.blocked = blocked; this.gesture = gesture; this.back = back;
-    this.time = 0; this.nextMove = 0; this.padReady = false; this.padPressed = false;
-    this.key = event => {
-      this.gesture();
-      if (this.blocked() || event.repeat) return;
-      if (event.target?.tagName === 'INPUT') return;
-      if (['ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(event.key)) {
-        event.preventDefault(); this.move(['ArrowUp','ArrowLeft'].includes(event.key) ? -1 : 1);
-      } else if (event.key === 'Escape') {
-        event.preventDefault(); this.back();
-      } else if (['Enter',' '].includes(event.key) && !event.target?.closest?.('button')) {
-        event.preventDefault(); this.buttons()[0]?.click();
-      }
-    };
-    this.click = event => {
-      const button = event.target.closest('[data-result-action]');
-      if (button && !button.disabled && !this.blocked()) this.activate(button.dataset.resultAction);
-    };
+  // Recebe as dependências e prepara o estado inicial deste componente.
+  constructor(raiz, { activate, blocked, gesture, back }) {
+    this.root = raiz;
+    this.activate = activate;
+    this.blocked = blocked;
+    this.gesture = gesture;
+    this.back = back;
+    this.time = 0;
+    this.nextMove = 0;
+    this.padReady = false;
+    this.padPressed = false;
+    this.key = this.tratarTecla.bind(this);
+    this.click = this.tratarClique.bind(this);
     this.pointer = () => this.gesture();
   }
+  // ===== EVENTOS E TECLADO =====
+  // Prepara os elementos e eventos usados enquanto esta tela estiver aberta.
   mount() {
-    window.addEventListener('keydown', this.key);
-    window.addEventListener('pointerdown', this.pointer);
-    this.root.addEventListener('click', this.click);
+    window.addEventListener("keydown", this.key);
+    window.addEventListener("pointerdown", this.pointer);
+    this.root.addEventListener("click", this.click);
   }
-  buttons() { return [...this.root.querySelectorAll('[data-result-action]:not(:disabled)')]; }
-  move(direction) {
-    const buttons = this.buttons();
-    if (!buttons.length) return;
-    const index = buttons.indexOf(document.activeElement);
-    buttons[index < 0 ? (direction > 0 ? 0 : buttons.length - 1) : (index + direction + buttons.length) % buttons.length].focus();
-  }
-  update(ms) {
-    this.time += ms;
-    const pad = globalThis.navigator?.getGamepads?.()?.find(item => item?.connected);
-    if (!pad) { this.padReady = false; this.padPressed = false; return; }
-    const pressed = Boolean(pad.buttons[0]?.pressed || pad.buttons[9]?.pressed);
-    // Um botão segurado durante a partida não pode confirmar a tela recém-aberta.
-    if (!pressed) this.padReady = true;
-    const axis = pad.axes?.[1] ?? 0;
-    const direction = pad.buttons[12]?.pressed || axis < -LOBBY.motion.stickThreshold ? -1 : pad.buttons[13]?.pressed || axis > LOBBY.motion.stickThreshold ? 1 : 0;
-    if (!this.blocked()) {
-      if (direction && this.time >= this.nextMove) {
-        this.move(direction); this.nextMove = this.time + LOBBY.motion.gamepadRepeat;
-      }
-      if (this.padReady && pressed && !this.padPressed) {
-        const button = this.root.querySelector('[data-result-action]:focus:not(:disabled)') ?? this.buttons()[0];
-        button?.click();
-      }
+  tratarTecla(evento) {
+    this.gesture();
+    if (this.blocked() || evento.repeat) return;
+    if (evento.target?.tagName === "INPUT") return;
+    const setas = [
+      "ArrowUp",
+      "ArrowLeft",
+      "ArrowDown",
+      "ArrowRight"
+    ];
+    if (setas.includes(evento.key)) {
+      evento.preventDefault();
+      const voltar = ["ArrowUp", "ArrowLeft"].includes(evento.key);
+      this.move(voltar ? -1 : 1);
+    } else if (evento.key === "Escape") {
+      evento.preventDefault();
+      this.back();
+    } else if (["Enter", " "].includes(evento.key) && !evento.target?.closest?.("button")) {
+      evento.preventDefault();
+      this.buttons()[0]?.click();
     }
-    this.padPressed = pressed;
   }
+  tratarClique(evento) {
+    const botao = evento.target.closest("[data-result-action]");
+    if (!botao || botao.disabled || this.blocked()) return;
+    this.activate(botao.dataset.resultAction);
+  }
+  buttons() {
+    return [...this.root.querySelectorAll("[data-result-action]:not(:disabled)")];
+  }
+  // Recebe -1 ou 1 e move o foco, circulando apenas entre opções habilitadas.
+  move(direcao) {
+    const botoes = this.buttons();
+    if (!botoes.length) return;
+    const indiceAtual = botoes.indexOf(document.activeElement);
+    let proximoIndice;
+    if (indiceAtual < 0) {
+      proximoIndice = direcao > 0 ? 0 : botoes.length - 1;
+    } else {
+      proximoIndice = (indiceAtual + direcao + botoes.length) % botoes.length;
+    }
+    botoes[proximoIndice].focus();
+  }
+  // ===== CONTROLE =====
+  // Recebe a atualização atual e avança o estado, sem redesenhar a tela.
+  update(milissegundos) {
+    this.time += milissegundos;
+    const controle = controleConectado();
+    if (!controle) {
+      this.padReady = false;
+      this.padPressed = false;
+      return;
+    }
+    const pressionado = Boolean(controle.buttons[0]?.pressed || controle.buttons[9]?.pressed);
+    // Um botão segurado na partida deve ser solto antes de confirmar a tela recém-aberta.
+    if (!pressionado) this.padReady = true;
+    if (!this.blocked()) this.navegarComControle(controle, pressionado);
+    this.padPressed = pressionado;
+  }
+  navegarComControle(controle, pressionado) {
+    const direcao = direcaoDoControle(controle);
+    if (direcao && this.time >= this.nextMove) {
+      this.move(direcao);
+      this.nextMove = this.time + LOBBY.motion.gamepadRepeat;
+    }
+    if (this.padReady && pressionado && !this.padPressed) {
+      const selecionado = this.root.querySelector("[data-result-action]:focus:not(:disabled)");
+      const botao = selecionado ?? this.buttons()[0];
+      botao?.click();
+    }
+  }
+  // ===== SAÍDA =====
+  // Encerra os recursos desta instância para não deixar eventos ativos.
   destroy() {
-    window.removeEventListener('keydown', this.key);
-    window.removeEventListener('pointerdown', this.pointer);
-    this.root.removeEventListener('click', this.click);
+    window.removeEventListener("keydown", this.key);
+    window.removeEventListener("pointerdown", this.pointer);
+    this.root.removeEventListener("click", this.click);
   }
 }

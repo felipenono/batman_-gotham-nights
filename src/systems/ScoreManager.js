@@ -1,79 +1,203 @@
-import { LOBBY } from '../config/lobby.js';
-
-const natural = value => Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
-
-/** Placar independente de entidades e cenas. Recebe apenas eventos e tempo ativo. */
+// Este arquivo cuida de registrar pontos, tempo ativo e recordes.
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+import { LOBBY } from "../config/configuracao.js";
+// ===== VALIDAÇÃO E ARMAZENAMENTO =====
+// Recebe um valor e devolve um inteiro positivo ou zero, inclusive para dados inválidos.
+function converterParaInteiroPositivo(valor) {
+  if (!Number.isFinite(valor)) return 0;
+  return Math.max(0, Math.floor(valor));
+}
+function escolherArmazenamento(armazenamento) {
+  try {
+    if (armazenamento === undefined) return globalThis.localStorage;
+    return armazenamento;
+  } catch {
+    // Alguns navegadores bloqueiam até mesmo o acesso à propriedade localStorage.
+    return null;
+  }
+}
+// ===== COMPORTAMENTO =====
 export class ScoreManager {
-  constructor({ config = LOBBY.scoring, storage } = {}) {
-    this.config = config;
-    try { this.storage = storage === undefined ? globalThis.localStorage : storage; } catch { this.storage = null; }
-    this.bestScore = 0;
-    try { this.bestScore = natural(Number(this.storage?.getItem(config.storageKey))); } catch { /* Modo privado: recorde em memória. */ }
+  // Recebe configuração e armazenamento opcionais, sem depender das cenas do jogo.
+  // Recebe as dependências e prepara o estado inicial deste componente.
+  constructor({ config: configuracao = LOBBY.scoring, storage } = {}) {
+    this.config = configuracao;
+    this.storage = escolherArmazenamento(storage);
+    this.bestScore = this.lerRecorde();
     this.reiniciar();
   }
+  lerRecorde() {
+    try {
+      const valorSalvo = this.storage?.getItem(this.config.storageKey);
+      return converterParaInteiroPositivo(Number(valorSalvo));
+    } catch {
+      return 0;
+    }
+  }
+  salvarRecorde() {
+    try {
+      this.storage?.setItem(this.config.storageKey, String(this.bestScore));
+    } catch {}
+  }
+  // ===== PARTIDA E CRONÔMETRO =====
+  // Limpa uma campanha, preservando o recorde já carregado ou conquistado.
   reiniciar() {
-    this.score = 0; this.mobs = 0; this.bosses = 0; this.mobPoints = 0; this.bossPoints = 0;
-    this.bonusTotal = 0; this.timeBonus = 0; this.elapsedSeconds = 0; this.levelIndex = 1;
-    this.running = false; this.paused = false; this.finished = false; this.pulse = 0;
-    this.newRecord = false; this.recordAtStart = this.bestScore;
-    this.players = [0, 0]; this.entries = new Map();
+    // Estes campos públicos mantêm os nomes usados pelo HUD e pelas integrações existentes.
+    this.score = 0;
+    this.mobs = 0;
+    this.bosses = 0;
+    this.mobPoints = 0;
+    this.bossPoints = 0;
+    this.bonusTotal = 0;
+    this.timeBonus = 0;
+    this.elapsedSeconds = 0;
+    this.levelIndex = 1;
+    this.running = false;
+    this.paused = false;
+    this.finished = false;
+    this.pulse = 0;
+    this.newRecord = false;
+    this.recordAtStart = this.bestScore;
+    this.players = [0, 0];
+    this.entries = new Map();
   }
-  iniciarFase(levelIndex = 1) {
-    this.levelIndex = levelIndex; this.elapsedSeconds = 0; this.timeBonus = 0;
-    this.running = true; this.paused = false; this.finished = false;
+  // Inicia o relógio da fase, mantendo os pontos das fases anteriores.
+  iniciarFase(numeroDaFase = 1) {
+    this.levelIndex = numeroDaFase;
+    this.elapsedSeconds = 0;
+    this.timeBonus = 0;
+    this.running = true;
+    this.paused = false;
+    this.finished = false;
   }
-  pausar(value = true) { this.paused = value; }
-  pararCronometro() { this.running = false; }
-  atualizar(seconds) {
-    if (!this.running || this.paused || !Number.isFinite(seconds) || seconds <= 0) return;
-    this.elapsedSeconds += seconds;
-    this.pulse = Math.max(0, this.pulse - seconds * 1000);
+  pausar(devePausar = true) {
+    this.paused = devePausar;
   }
-  // Ponto de extensão: combo, itens ou dano poderão transformar o valor aqui.
-  aplicarModificadores(points, context) { return points; }
-  adicionar(category, type, playerIndex = 0) {
+  pararCronometro() {
+    this.running = false;
+  }
+  // Recebe segundos de jogo ativo; pausas e valores inválidos não avançam o relógio.
+  atualizar(segundos) {
+    if (!this.running || this.paused) return;
+    if (!Number.isFinite(segundos) || segundos <= 0) return;
+    this.elapsedSeconds += segundos;
+    this.pulse = Math.max(0, this.pulse - segundos * 1000);
+  }
+  // ===== PONTOS POR ABATE =====
+  // Ponto de extensão: no futuro, o contexto permitirá aplicar combos ou itens.
+  aplicarModificadores(pontos, contexto) {
+    return pontos;
+  }
+  // Recebe um evento de morte e devolve os pontos concedidos, sem conhecer o inimigo.
+  adicionar(categoria, tipo, indiceDoJogador = 0) {
     if (!this.running || this.paused || this.finished) return 0;
-    const base = natural(this.config[`${category}Types`][type] ?? this.config[category]);
-    const points = natural(this.aplicarModificadores(base, { category, type, playerIndex }));
-    const key = `${category}:${type}:${points}`;
-    const entry = this.entries.get(key) ?? { category, type, count: 0, unitPoints: points, points: 0 };
-    entry.count++; entry.points += points; this.entries.set(key, entry);
-    if (category === 'mob') { this.mobs++; this.mobPoints += points; }
-    else { this.bosses++; this.bossPoints += points; }
-    this.creditar(points, playerIndex);
-    return points;
+    const valoresPorTipo = this.config[`${categoria}Types`];
+    const valorBase = valoresPorTipo[tipo] ?? this.config[categoria];
+    const contexto = {
+      category: categoria,
+      type: tipo,
+      playerIndex: indiceDoJogador
+    };
+    const pontosBase = converterParaInteiroPositivo(valorBase);
+    const pontos = converterParaInteiroPositivo(this.aplicarModificadores(pontosBase, contexto));
+    this.registrarAbate(categoria, tipo, pontos);
+    this.creditar(pontos, indiceDoJogador);
+    return pontos;
   }
-  adicionarPontosMob(type = 'default', playerIndex = 0) { return this.adicionar('mob', type, playerIndex); }
-  adicionarPontosChefao(type = 'default', playerIndex = 0) { return this.adicionar('boss', type, playerIndex); }
-  creditar(points, playerIndex = 0) {
-    this.score += points; this.players[playerIndex === 1 ? 1 : 0] += points;
-    if (points > 0) this.pulse = this.config.pulseDuration;
+  registrarAbate(categoria, tipo, pontos) {
+    const chave = `${categoria}:${tipo}:${pontos}`;
+    let registro = this.entries.get(chave);
+    if (!registro) {
+      registro = {
+        category: categoria,
+        type: tipo,
+        count: 0,
+        unitPoints: pontos,
+        points: 0
+      };
+      this.entries.set(chave, registro);
+    }
+    registro.count += 1;
+    registro.points += pontos;
+    if (categoria === "mob") {
+      this.mobs += 1;
+      this.mobPoints += pontos;
+    } else {
+      this.bosses += 1;
+      this.bossPoints += pontos;
+    }
+  }
+  adicionarPontosMob(tipo = "default", indiceDoJogador = 0) {
+    return this.adicionar("mob", tipo, indiceDoJogador);
+  }
+  adicionarPontosChefao(tipo = "default", indiceDoJogador = 0) {
+    return this.adicionar("boss", tipo, indiceDoJogador);
+  }
+  // Soma pontos ao total e ao jogador correspondente, atualizando o recorde imediatamente.
+  creditar(pontos, indiceDoJogador = 0) {
+    const jogador = indiceDoJogador === 1 ? 1 : 0;
+    this.score += pontos;
+    this.players[jogador] += pontos;
+    if (pontos > 0) this.pulse = this.config.pulseDuration;
     this.newRecord = this.score > this.recordAtStart;
     if (this.score > this.bestScore) {
       this.bestScore = this.score;
-      try { this.storage?.setItem(this.config.storageKey, String(this.bestScore)); } catch { /* Sem armazenamento: a partida continua. */ }
+      this.salvarRecorde();
     }
   }
-  calcularBonusTempo(seconds = this.elapsedSeconds) {
-    // Remove apenas o erro numérico acumulado pelo passo fixo (ex.: 90.00000000001).
-    const time = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds * 1e6) / 1e6) : Infinity;
-    return natural([...this.config.timeBonuses].sort((a,b) => a.seconds-b.seconds).find(tier => time <= tier.seconds)?.points);
+  // ===== CONCLUSÃO E DADOS PARA A INTERFACE =====
+  // Recebe segundos e escolhe a menor faixa que inclui esse tempo, mesmo fora de ordem.
+  calcularBonusTempo(segundos = this.elapsedSeconds) {
+    let tempo = Infinity;
+    if (Number.isFinite(segundos)) {
+      tempo = Math.max(0, Math.round(segundos * 1000000) / 1000000);
+    }
+    let faixaEscolhida = null;
+    for (const faixa of this.config.timeBonuses) {
+      if (tempo > faixa.seconds) continue;
+      if (faixaEscolhida === null || faixa.seconds < faixaEscolhida.seconds) {
+        faixaEscolhida = faixa;
+      }
+    }
+    return converterParaInteiroPositivo(faixaEscolhida?.points);
   }
+  // Encerra uma fase vencida. Chamadas repetidas não concedem bônus novamente.
   finalizarFase() {
     if (!this.finished) {
-      this.timeBonus = this.calcularBonusTempo(); this.bonusTotal += this.timeBonus;
-      this.creditar(this.timeBonus); this.finished = true; this.running = false;
+      this.timeBonus = this.calcularBonusTempo();
+      this.bonusTotal += this.timeBonus;
+      this.creditar(this.timeBonus);
+      this.finished = true;
+      this.running = false;
     }
     return this.dados();
   }
-  finalizarDerrota() { this.running = false; this.finished = true; return this.dados(); }
+  finalizarDerrota() {
+    this.running = false;
+    this.finished = true;
+    return this.dados();
+  }
+  // Devolve uma cópia do resumo; a tela final não consegue alterar os registros internos.
   dados() {
-    return { score: this.score, bestScore: this.bestScore, elapsedSeconds: this.elapsedSeconds,
-      levelIndex: this.levelIndex, mobs: this.mobs, bosses: this.bosses, mobPoints: this.mobPoints,
-      bossPoints: this.bossPoints, timeBonus: this.timeBonus, bonusTotal: this.bonusTotal,
-      newRecord: this.newRecord, demo: false, scoring: true,
-      breakdown: [...this.entries.values()].map(entry => ({ ...entry })),
-      players: this.players.map((score, index) => ({ name: `${LOBBY.endScreens.labels.player} ${index + 1}`, score })),
+    return {
+      score: this.score,
+      bestScore: this.bestScore,
+      elapsedSeconds: this.elapsedSeconds,
+      levelIndex: this.levelIndex,
+      mobs: this.mobs,
+      bosses: this.bosses,
+      mobPoints: this.mobPoints,
+      bossPoints: this.bossPoints,
+      timeBonus: this.timeBonus,
+      bonusTotal: this.bonusTotal,
+      newRecord: this.newRecord,
+      demo: false,
+      scoring: true,
+      breakdown: [...this.entries.values()].map((registro) => ({ ...registro })),
+      players: this.players.map((pontos, indice) => ({
+        name: `${LOBBY.endScreens.labels.player} ${indice + 1}`,
+        score: pontos
+      }))
     };
   }
 }

@@ -1,194 +1,198 @@
-import { LIGHTING } from '../utils/constants.js';
-/**
- * @file Level3Background.js
- * Arkham Asylum Interior: Gothic stone asylum, glowing inmate cells, flickering tubes, gargoyles, creeping green fog.
- */
+// Este arquivo cuida de desenhar Arkham e seus reflexos de luz.
+import { APARENCIA } from "../config/configuracao.js";
 
-import { Background } from './Background.js';
-
+// ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
+import { LIGHTING } from "../config/configuracao.js";
+import { Background } from "./Background.js";
+const estiloVisual = APARENCIA.Level3Background;
+// ===== COMPORTAMENTO =====
 export class Level3Background extends Background {
-  constructor(width = 900, height = 500) {
-    super(width, height);
+  // Recebe as dependências e prepara o estado inicial deste componente.
+  constructor(largura = 900, altura = 500) {
+    super(largura, altura);
     this.flickerTimer = 0;
     this.fogTime = 0;
-    // Fixtures are world objects. Every halo/reflection uses this same source.
-    this.lights = [
-      { x: 260, y: 45, width: 70, enabled: true, phase: 0 },
-      { x: 640, y: 45, width: 70, enabled: true, phase: 1.7 },
-    ];
+    this.lights = [{
+      x: 260,
+      y: 45,
+      width: 70,
+      enabled: true,
+      phase: 0
+    }, {
+      x: 640,
+      y: 45,
+      width: 70,
+      enabled: true,
+      phase: 1.7
+    }];
   }
-
-  update(dt = 1, camera = null) {
-    this.fogTime += 0.03 * dt;
-    this.flickerTimer += dt;
+  // Recebe a atualização atual e avança o estado, sem redesenhar a tela.
+  update(passoTempo = 1, cameraDoJogo = null) {
+    this.fogTime += 0.03 * passoTempo;
+    this.flickerTimer += passoTempo;
   }
-
-  draw(ctx, camera = null) {
-
-    ctx.save();
-    ctx.translate(-(camera?.renderX ?? 0), -(camera?.renderY ?? 0));
-
-    // 1. Dark Gothic Stone Wall Base
-    const stoneGrad = ctx.createLinearGradient(0, 0, 0, this.height);
-    stoneGrad.addColorStop(0, '#09090b');
-    stoneGrad.addColorStop(0.5, '#18181b');
-    stoneGrad.addColorStop(1, '#052e16'); // greenish undertone
-    ctx.fillStyle = stoneGrad;
-    ctx.fillRect(0, 0, this.width, this.height);
-
-    // 2. Stone Brick Patterns
-    ctx.strokeStyle = '#27272a';
-    ctx.lineWidth = 1;
-    for (let y = 30; y < this.height - 80; y += 35) {
-      ctx.beginPath();
-      ctx.moveTo(0, y); ctx.lineTo(this.width, y);
-      ctx.stroke();
-
-      const offset = (y % 70 === 0) ? 0 : 35;
-      for (let x = 0 + offset; x < this.width + 100; x += 70) {
-        ctx.beginPath();
-        ctx.moveTo(x, y); ctx.lineTo(x, y + 35);
-        ctx.stroke();
-      }
-    }
-
-    // 3. Asylum Cell Bars with glowing prisoner eyes
-    const cellStep = 180;
-    for (let cx = 0 + 40; cx < this.width + 120; cx += cellStep) {
-      // Dark cell recess
-      ctx.fillStyle = '#050508';
-      ctx.fillRect(cx, 80, 110, 220);
-
-      // Glowing red / yellow inmate eyes lurking in darkness
-      ctx.fillStyle = (Math.sin(cx * 3) > 0) ? '#ef4444' : '#eab308';
-      ctx.beginPath();
-      ctx.arc(cx + 45, 170, 2.5, 0, Math.PI * 2);
-      ctx.arc(cx + 55, 170, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Heavy Iron Cell Bars
-      ctx.strokeStyle = '#52525b';
-      ctx.lineWidth = 4;
-      for (let bx = cx + 8; bx < cx + 110; bx += 18) {
-        ctx.beginPath();
-        ctx.moveTo(bx, 80);
-        ctx.lineTo(bx, 300);
-        ctx.stroke();
-      }
-
-      // Cell Arch top
-      ctx.fillStyle = '#27272a';
-      ctx.beginPath();
-      ctx.arc(cx + 55, 80, 55, Math.PI, 0, false);
-      ctx.fill();
-    }
-
-    // 4. Stone Gargoyle Statues on pillars
-    const pillars = [120, 780];
-    for (const px of pillars) {
-      // Pillar shaft
-      ctx.fillStyle = '#1c1917';
-      ctx.fillRect(px - 20, 120, 40, this.height - 180);
-
-      // Gargoyle perched atop pillar
-      ctx.fillStyle = '#292524';
-      ctx.beginPath();
-      // Body
-      ctx.ellipse(px, 110, 16, 14, 0, 0, Math.PI * 2);
-      ctx.fill();
-      // Wings
-      ctx.beginPath();
-      ctx.moveTo(px - 14, 110); ctx.lineTo(px - 32, 85); ctx.lineTo(px - 12, 100);
-      ctx.moveTo(px + 14, 110); ctx.lineTo(px + 32, 85); ctx.lineTo(px + 12, 100);
-      ctx.fill();
-      // Red glowing eyes on gargoyle
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(px - 5, 107, 3, 2);
-      ctx.fillRect(px + 2, 107, 3, 2);
-    }
-
-    // 5. Flickering Industrial Fluorescent Ceiling Tubes
-    ctx.save();
-    for (const light of this.lights) {
-      const tx = light.x;
-      const lightAlpha = this.lightIntensity(light);
-      ctx.strokeStyle = '#27272a';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(tx, 0); ctx.lineTo(tx, light.y);
-      ctx.stroke();
-
-      // Tube glass
-      ctx.shadowColor = '#86efac';
-      ctx.shadowBlur = lightAlpha > 0 ? 7 : 0;
-      ctx.fillStyle = lightAlpha > 0 ? `rgba(240, 253, 244, ${lightAlpha})` : '#3f3f46';
-      ctx.fillRect(tx - light.width / 2, light.y, light.width, 6);
-      ctx.shadowBlur = 0;
-      if (lightAlpha === 0) continue;
-
-      // Cast light beam downward
-      const coneGrad = ctx.createRadialGradient(tx, light.y + 6, 5, tx, light.y + 6, 180);
-      coneGrad.addColorStop(0, `rgba(134, 239, 172, ${lightAlpha * 0.25})`);
-      coneGrad.addColorStop(1, 'rgba(134, 239, 172, 0)');
-      ctx.fillStyle = coneGrad;
-      ctx.beginPath();
-      ctx.moveTo(tx - light.width / 2, light.y + 6);
-      ctx.lineTo(tx + light.width / 2, light.y + 6);
-      ctx.lineTo(tx + 90, light.y + 180);
-      ctx.lineTo(tx - 90, light.y + 180);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.restore();
-
-    // 6. Creeping Toxic Green Fog in lower half
-    ctx.save();
+  // Recebe o contexto 2D e desenha o estado atual sem avançar o tempo.
+  draw(contexto, cameraDoJogo = null) {
+    contexto.save();
+    contexto.translate(-(cameraDoJogo?.renderX ?? 0), -(cameraDoJogo?.renderY ?? 0));
+    this.desenharParede(contexto);
+    this.desenharTijolos(contexto);
+    this.desenharCelas(contexto);
+    this.desenharGargulas(contexto);
+    this.desenharLampadas(contexto);
+    contexto.save();
     const fogBaseY = this.height - 120;
-    const fogGrad = ctx.createLinearGradient(0, fogBaseY - 60, 0, this.height);
-    fogGrad.addColorStop(0, 'rgba(34, 197, 94, 0)');
-    fogGrad.addColorStop(0.5, 'rgba(22, 101, 52, 0.45)');
-    fogGrad.addColorStop(1, 'rgba(20, 83, 45, 0.4)');
-    ctx.fillStyle = fogGrad;
-    ctx.fillRect(0, fogBaseY - 60, this.width, 180);
-
-    // Dynamic swirling fog blobs
-    ctx.fillStyle = 'rgba(12, 35, 25, 0.12)';
+    const fogGrad = contexto.createLinearGradient(0, fogBaseY - 60, 0, this.height);
+    fogGrad.addColorStop(0, estiloVisual.gradiente1);
+    fogGrad.addColorStop(0.5, estiloVisual.gradiente2);
+    fogGrad.addColorStop(1, estiloVisual.gradiente3);
+    contexto.fillStyle = fogGrad;
+    contexto.fillRect(0, fogBaseY - 60, this.width, 180);
+    contexto.fillStyle = estiloVisual.preenchimento4;
     for (let fx = 0; fx < this.width + 100; fx += 140) {
       const fy = fogBaseY + Math.sin(this.fogTime * 2 + fx) * 16;
-      ctx.beginPath();
-      ctx.ellipse(fx, fy, 90, 30, 0, 0, Math.PI * 2);
-      ctx.fill();
+      contexto.beginPath();
+      contexto.ellipse(fx, fy, 90, 30, 0, 0, Math.PI * 2);
+      contexto.fill();
     }
-    ctx.restore();
-
-    ctx.restore();
+    contexto.restore();
+    contexto.restore();
   }
-
   lightIntensity(light) {
     if (!light.enabled || Math.sin(this.flickerTimer * 0.4 + light.phase) > 0.85) return 0;
     return 0.85 * LIGHTING.INTENSITY;
   }
-
   // Called after platforms, in the same world transform as the colliders.
-  drawSurfaceLighting(ctx, platforms) {
+  drawSurfaceLighting(contexto, platforms) {
     for (const light of this.lights) {
       const intensity = this.lightIntensity(light);
       if (intensity === 0) continue;
-      const surface = platforms.filter(p => p.alive && p.y > light.y && light.x >= p.x && light.x <= p.x + p.w)
-        .sort((a, b) => a.y - b.y)[0];
+      let surface = null;
+      for (const plataforma of platforms) {
+        if (!plataforma.alive || plataforma.y <= light.y) continue;
+        if (light.x < plataforma.x || light.x > plataforma.x + plataforma.w) continue;
+        if (!surface || plataforma.y < surface.y) surface = plataforma;
+      }
       if (!surface) continue;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(surface.x, surface.y, surface.w, surface.h);
-      ctx.clip();
-      ctx.translate(light.x, surface.y + 3);
-      ctx.scale(1, 0.15);
-      const reflection = ctx.createRadialGradient(0, 0, 2, 0, 0, 65);
+      contexto.save();
+      contexto.beginPath();
+      contexto.rect(surface.x, surface.y, surface.w, surface.h);
+      contexto.clip();
+      contexto.translate(light.x, surface.y + 3);
+      contexto.scale(1, 0.15);
+      const reflection = contexto.createRadialGradient(0, 0, 2, 0, 0, 65);
       reflection.addColorStop(0, `rgba(134, 239, 172, ${intensity * 0.35})`);
-      reflection.addColorStop(1, 'rgba(134, 239, 172, 0)');
-      ctx.fillStyle = reflection;
-      ctx.fillRect(-65, -65, 130, 130);
-      ctx.restore();
+      reflection.addColorStop(1, estiloVisual.gradiente5);
+      contexto.fillStyle = reflection;
+      contexto.fillRect(-65, -65, 130, 130);
+      contexto.restore();
     }
+  }
+  // Desenha esta camada na posição original da composição.
+  desenharParede(contexto) {
+    const stoneGrad = contexto.createLinearGradient(0, 0, 0, this.height);
+    stoneGrad.addColorStop(0, estiloVisual.gradiente6);
+    stoneGrad.addColorStop(0.5, estiloVisual.gradiente7);
+    stoneGrad.addColorStop(1, estiloVisual.gradiente8);
+    contexto.fillStyle = stoneGrad;
+    contexto.fillRect(0, 0, this.width, this.height);
+  }
+  // Desenha esta camada na posição original da composição.
+  desenharTijolos(contexto) {
+    contexto.strokeStyle = estiloVisual.contorno9;
+    contexto.lineWidth = 1;
+    for (let posicaoY = 30; posicaoY < this.height - 80; posicaoY += 35) {
+      contexto.beginPath();
+      contexto.moveTo(0, posicaoY);
+      contexto.lineTo(this.width, posicaoY);
+      contexto.stroke();
+      const deslocamento = posicaoY % 70 === 0 ? 0 : 35;
+      for (let posicaoX = 0 + deslocamento; posicaoX < this.width + 100; posicaoX += 70) {
+        contexto.beginPath();
+        contexto.moveTo(posicaoX, posicaoY);
+        contexto.lineTo(posicaoX, posicaoY + 35);
+        contexto.stroke();
+      }
+    }
+  }
+  // Desenha esta camada na posição original da composição.
+  desenharCelas(contexto) {
+    const cellStep = 180;
+    for (let cx = 0 + 40; cx < this.width + 120; cx += cellStep) {
+      contexto.fillStyle = estiloVisual.preenchimento10;
+      contexto.fillRect(cx, 80, 110, 220);
+      contexto.fillStyle = Math.sin(cx * 3) > 0 ? estiloVisual.gradiente11 : estiloVisual.gradiente12;
+      contexto.beginPath();
+      contexto.arc(cx + 45, 170, 2.5, 0, Math.PI * 2);
+      contexto.arc(cx + 55, 170, 2.5, 0, Math.PI * 2);
+      contexto.fill();
+      contexto.strokeStyle = estiloVisual.contorno13;
+      contexto.lineWidth = 4;
+      for (let bx = cx + 8; bx < cx + 110; bx += 18) {
+        contexto.beginPath();
+        contexto.moveTo(bx, 80);
+        contexto.lineTo(bx, 300);
+        contexto.stroke();
+      }
+      contexto.fillStyle = estiloVisual.contorno9;
+      contexto.beginPath();
+      contexto.arc(cx + 55, 80, 55, Math.PI, 0, false);
+      contexto.fill();
+    }
+  }
+  // Desenha esta camada na posição original da composição.
+  desenharGargulas(contexto) {
+    const pillars = [120, 780];
+    for (const px of pillars) {
+      contexto.fillStyle = estiloVisual.preenchimento15;
+      contexto.fillRect(px - 20, 120, 40, this.height - 180);
+      contexto.fillStyle = estiloVisual.preenchimento16;
+      contexto.beginPath();
+      contexto.ellipse(px, 110, 16, 14, 0, 0, Math.PI * 2);
+      contexto.fill();
+      contexto.beginPath();
+      contexto.moveTo(px - 14, 110);
+      contexto.lineTo(px - 32, 85);
+      contexto.lineTo(px - 12, 100);
+      contexto.moveTo(px + 14, 110);
+      contexto.lineTo(px + 32, 85);
+      contexto.lineTo(px + 12, 100);
+      contexto.fill();
+      contexto.fillStyle = estiloVisual.preenchimento17;
+      contexto.fillRect(px - 5, 107, 3, 2);
+      contexto.fillRect(px + 2, 107, 3, 2);
+    }
+  }
+  // Desenha esta camada na posição original da composição.
+  desenharLampadas(contexto) {
+    contexto.save();
+    for (const light of this.lights) {
+      const tx = light.x;
+      const lightAlpha = this.lightIntensity(light);
+      contexto.strokeStyle = estiloVisual.contorno9;
+      contexto.lineWidth = 2;
+      contexto.beginPath();
+      contexto.moveTo(tx, 0);
+      contexto.lineTo(tx, light.y);
+      contexto.stroke();
+      contexto.shadowColor = estiloVisual.brilho19;
+      contexto.shadowBlur = lightAlpha > 0 ? 7 : 0;
+      contexto.fillStyle = lightAlpha > 0 ? `rgba(240, 253, 244, ${lightAlpha})` : estiloVisual.gradiente20;
+      contexto.fillRect(tx - light.width / 2, light.y, light.width, 6);
+      contexto.shadowBlur = 0;
+      if (lightAlpha === 0) continue;
+      const coneGrad = contexto.createRadialGradient(tx, light.y + 6, 5, tx, light.y + 6, 180);
+      coneGrad.addColorStop(0, `rgba(134, 239, 172, ${lightAlpha * 0.25})`);
+      coneGrad.addColorStop(1, estiloVisual.gradiente5);
+      contexto.fillStyle = coneGrad;
+      contexto.beginPath();
+      contexto.moveTo(tx - light.width / 2, light.y + 6);
+      contexto.lineTo(tx + light.width / 2, light.y + 6);
+      contexto.lineTo(tx + 90, light.y + 180);
+      contexto.lineTo(tx - 90, light.y + 180);
+      contexto.closePath();
+      contexto.fill();
+    }
+    contexto.restore();
   }
 }
