@@ -17,11 +17,17 @@
     import { Game } from '../src/core/Game.js';
     import { loadSprites } from '../src/utils/SpriteAnimator.js';
     import { LOBBY } from '../src/config/lobby.js';
+    import { ScoreManager } from '../src/systems/ScoreManager.js';
     const query = new URLSearchParams(location.search);
     if (query.has('coop')) { LOBBY.endScreens.features.twoPlayers = true; LOBBY.endScreens.features.skinPreview = true; }
     await loadSprites();
     const game = new Game(document.querySelector('canvas'));
+    // Prévia isolada: não grava valores de exemplo no recorde real.
+    game.scoreManager = new ScoreManager({ storage: null });
     game.restartGame(2);
+    for (let i = 0; i < 12; i++) game.scoreManager.adicionarPontosMob('Penguin');
+    game.scoreManager.adicionarPontosChefao('HarleyQuinn');
+    game.scoreManager.atualizar(132);
     game.start();
     game.showEndScreen(query.get('result') === 'victory' ? 'victory' : 'defeat', {
       players: [{ name:'JOGADOR 1', score:14800 }, { name:'JOGADOR 2', score:12600 }],

@@ -17,6 +17,7 @@ export class HarleyQuinn extends Character {
     super({ x, y, w: 38, h: 72, maxHp: 120 });
     this.spriteKey = 'harley_quinn';
 
+    this.scoreType = 'HarleyQuinn';
     this.name = 'Arlequina';
     this.isBoss = true;
 

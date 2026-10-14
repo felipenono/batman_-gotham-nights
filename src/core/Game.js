@@ -46,6 +46,7 @@ import { HUD } from '../systems/HUD.js';
 import { ScreenUI } from '../systems/ScreenUI.js';
 import { LOBBY } from '../config/lobby.js';
 import { normalizeResultData } from '../scenes/EndGameScene.js';
+import { ScoreManager } from '../systems/ScoreManager.js';
 
 export class Game {
   /**
@@ -79,6 +80,7 @@ export class Game {
     this.spawner = new Spawner();
     this.bossManager = new BossManager();
     this.levelManager = new LevelManager();
+    this.scoreManager = new ScoreManager();
 
     // [POO - Coleções de Modelos / Entidades Polimórficas]
     this.player = null;          // Instância de Batman (Character)
@@ -126,20 +128,32 @@ export class Game {
     this.levelManager.currentLevelIndex = levelIndex;
     this.levelManager.transitionTimer = 0;
     this.bossManager.reset();
+    this.scoreManager.reiniciar();
     this.initLevel(levelIndex);
     this.soundManager.setTrack('rooftops');
     this.state = GameState.PLAYING;
   }
 
-  /** API pública: recebe dados da partida. Sem placar pronto, usa exemplos configuráveis. */
+  /** API pública: envia uma cópia do placar real; parâmetros explícitos podem substituí-lo. */
   showEndScreen(result, data = {}) {
     if (!LOBBY.endScreens.screens[result]) throw new Error(`Resultado desconhecido: ${result}`);
-    const payload = normalizeResultData({ levelIndex: this.levelManager.currentLevelIndex, ...data });
+    if (this.sceneManager.transition) return false;
+    const score = result === 'victory' ? this.scoreManager.finalizarFase() : this.scoreManager.finalizarDerrota();
+    const payload = normalizeResultData({ ...score, levelIndex: this.levelManager.currentLevelIndex, ...data });
     return this.sceneManager.goTo('EndGameScene', { result, data: payload });
+  }
+
+  togglePause() {
+    if (this.sceneManager.transition || ![GameState.PLAYING, GameState.PAUSED].includes(this.state)) return;
+    const paused = this.state === GameState.PLAYING;
+    this.state = paused ? GameState.PAUSED : GameState.PLAYING;
+    this.scoreManager.pausar(paused);
+    this.input._onBlur(); this.mouse._onBlur(); this.screenUI.update();
   }
 
   initLevel(levelIndex = 1) {
     this.currentLevel = this.levelManager.loadLevel(levelIndex);
+    this.scoreManager.iniciarFase(levelIndex);
     this.camera.setBounds(this.currentLevel.width, this.currentLevel.height);
 
     if (!this.player) {
@@ -184,6 +198,9 @@ export class Game {
 
     // Congela o mundo durante a cortina, sem interromper áudio e animações das telas.
     if (this.sceneManager.transition && [GameState.PLAYING, GameState.LEVEL_TRANSITION].includes(this.state)) return;
+    if (this.input.isKeyJustPressed('Escape') || this.input.isKeyJustPressed('p')) {
+      if ([GameState.PLAYING, GameState.PAUSED].includes(this.state)) { this.togglePause(); return; }
+    }
 
     switch (this.state) {
       case GameState.MENU:
@@ -207,6 +224,7 @@ export class Game {
   }
 
   _updatePlaying(dt) {
+    this.scoreManager.atualizar(dt / 60);
     for (const effect of this.deathEffects) { effect.remaining -= dt; effect.actor.animator.update(effect.actor, dt); }
     this.deathEffects = this.deathEffects.filter(effect => effect.remaining > 0);
     // 1. Player input & movement
@@ -273,6 +291,7 @@ export class Game {
 
     // Check Boss Defeat
     this.bossManager.update((defeatedBoss) => {
+      this.scoreManager.finalizarFase();
       this.playSound('kill');
       this.camera.shake(14, 25);
 
@@ -294,7 +313,7 @@ export class Game {
       this.playSound('boss_enter');
     });
 
-    if (this.sceneManager.transition) return;
+    if (this.sceneManager.transition || this.state !== GameState.PLAYING) return;
 
     // 5. Update Common Enemies
     for (let i = this.enemies.length - 1; i >= 0; i--) {
@@ -330,6 +349,13 @@ export class Game {
       this.bossManager.boss,
       this.projectiles,
       (deadFoe) => {
+        // O evento de morte do combate ocorre uma única vez, inclusive para chefes intermediários.
+        if (deadFoe.isBoss) this.scoreManager.adicionarPontosChefao(deadFoe.scoreType);
+        else this.scoreManager.adicionarPontosMob(deadFoe.scoreType);
+        if (deadFoe.isBoss && this.bossManager.bossIndex + 1 >= this.bossManager.bossTypes.length) {
+          // Para o relógio no golpe final, antes da animação de morte do chefe.
+          this.scoreManager.pararCronometro();
+        }
         this.deathEffects.push({actor:deadFoe,remaining:GAME.DEATH_ANIMATION_FRAMES});
         this.playSound('kill');
         if (!deadFoe.isBoss) {
@@ -337,6 +363,7 @@ export class Game {
         }
       }
     );
+    if (!this.player.alive) { this.showEndScreen('defeat'); return; }
 
     // 8. World & camera
     this.currentLevel.update(dt, this.camera);
@@ -359,6 +386,7 @@ export class Game {
         break;
 
       case GameState.PLAYING:
+      case GameState.PAUSED:
         this._renderPlaying();
         break;
 
@@ -426,7 +454,8 @@ export class Game {
       this.width,
       this.height,
       this.soundManager ? this.soundManager.isMuted : false,
-      Batarang.available(this.projectiles)
+      Batarang.available(this.projectiles),
+      this.scoreManager
     );
   }
 

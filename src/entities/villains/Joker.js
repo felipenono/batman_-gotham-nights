@@ -39,6 +39,7 @@ export class Joker extends Character {
 
     // [POO - Atributos de Inteligência Artificial e Marcha]
     this.shootCooldown = 75 + Math.floor(Math.random() * 60);
+    this.scoreType = 'Joker';
     this.name = 'Coringa';
     this.speed = 1.6;        // Velocidade de marcha em direção ao jogador
     this.patrolTimer = 0;

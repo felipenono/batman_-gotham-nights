@@ -21,9 +21,9 @@ game.showEndScreen('victory', {
 });
 ```
 
-A morte real e a vitória após o último chefe já chamam essa API. O jogo ainda não mantém um sistema de pontos/recorde/cronômetro: nessas chamadas sem dados, os valores são ilustrativos, definidos em `LOBBY.endScreens.demo`, e identificados na tela. A fase atual é passada automaticamente. Quando houver dados reais, basta fornecê-los ao método acima; não é necessário alterar a cena.
+A morte real e a vitória após o último chefe já chamam essa API com pontuação, recorde e tempo reais do ScoreManager. Consulte SCORING.md para regras, configuração e eventos de morte. Chamadas sem parâmetros usam o placar atual.
 
-Os dados são copiados e normalizados ao entrar. A cena não lê pontuações nem tempo de variáveis globais. `elapsedSeconds` usa segundos. O recorde não é gravado em armazenamento: forneça `bestScore` pelo sistema de pontuação futuro.
+Os dados são copiados e normalizados ao entrar. A cena não lê pontuações nem tempo de variáveis globais. `elapsedSeconds` usa segundos. O ScoreManager mantém o recorde em localStorage e o envia como `bestScore`.
 
 **Tentar novamente** reinicia a fase informada com jogador, inimigos e contadores reinicializados. **Jogar novamente** começa uma campanha na fase 1. **Voltar ao menu** usa a mesma transição para retornar ao lobby. A partida fica congelada durante a transição.
 

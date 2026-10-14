@@ -1,5 +1,17 @@
 // Configuração única do lobby. Caminhos públicos são relativos à raiz do site.
 export const LOBBY = {
+  // Pontuação: tipos usam a propriedade estável scoreType das entidades.
+  scoring: {
+    mob: 100, boss: 500,
+    mobTypes: {}, // Exemplo: Penguin: 200
+    bossTypes: {}, // Exemplo: JokerBoss: 750
+    timeBonuses: [{ seconds: 90, points: 1000 }, { seconds: 180, points: 500 }, { seconds: 300, points: 250 }, { seconds: Infinity, points: 100 }],
+    storageKey: 'gotham-nights.best-score.v1',
+    countDuration: 1400, pulseDuration: 300, pulseScale: 0.1,
+    colors: { panel: '#091422e6', text: '#e6e9ed', accent: '#e9c46a', muted: '#91a3b7' },
+    font: 'Impact, "Arial Narrow", sans-serif',
+    labels: { score: 'PONTOS', time: 'TEMPO DA FASE', mobs: 'MOBS DERROTADOS', bosses: 'CHEFÕES DERROTADOS', bonus: 'BÔNUS DE TEMPO', previousBonus: 'BÔNUS DAS FASES ANTERIORES', record: 'NOVO RECORDE!', paused: 'JOGO PAUSADO', resume: 'CONTINUAR', pauseHint: 'ESC / P · PAUSAR', resumeHint: 'ESC / P · CONTINUAR' },
+  },
   assets: { logo: 'assets/images/logo.png', music: 'assets/audio/lobby_theme.mp3', click: 'assets/audio/menu_click.mp3' },
   base: { width: 1920, height: 1080 },
   colors: { sky: '#080e19', horizon: '#263c50', far: '#1b2b3a', middle: '#111f2d', near: '#080f19', window: '#c6ac69', accent: '#e9c46a', text: '#e6e9ed' },

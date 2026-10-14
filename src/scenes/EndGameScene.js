@@ -14,6 +14,14 @@ export function normalizeResultData(data = {}) {
     elapsedSeconds: finite(data.elapsedSeconds, demo.elapsedSeconds),
     levelIndex: Math.max(1, finite(data.levelIndex, demo.levelIndex)),
     demo: data.demo ?? !['score','bestScore','elapsedSeconds'].every(key => Number.isFinite(data[key])),
+    scoring: Boolean(data.scoring), newRecord: Boolean(data.newRecord),
+    mobs: finite(data.mobs, 0), bosses: finite(data.bosses, 0),
+    mobPoints: finite(data.mobPoints, 0), bossPoints: finite(data.bossPoints, 0),
+    timeBonus: finite(data.timeBonus, 0), bonusTotal: finite(data.bonusTotal, 0),
+    breakdown: (Array.isArray(data.breakdown) ? data.breakdown : []).map(entry => ({
+      category: entry.category === 'boss' ? 'boss' : 'mob', type: String(entry.type ?? ''),
+      count: finite(entry.count, 0), unitPoints: finite(entry.unitPoints, 0), points: finite(entry.points, 0),
+    })),
     players: (Array.isArray(data.players) ? data.players : []).slice(0, 2).map((player, index) => ({
       name: String(player?.name ?? `${LOBBY.endScreens.labels.player} ${index + 1}`),
       score: finite(player?.score, 0),
@@ -65,7 +73,7 @@ export class EndGameScene {
     this.root.style.setProperty('--result-entrance', `${config.titleEntrance}ms`);
     for (const [key, color] of Object.entries(config.colors)) this.root.style.setProperty(`--result-${key}`, color);
     const number = value => value.toLocaleString('pt-BR');
-    const stat = (label, value) => `<div class="result-stat"><dt>${escapeHTML(label)}</dt><dd>${escapeHTML(value)}</dd></div>`;
+    const stat = (label, value, count) => `<div class="result-stat"><dt>${escapeHTML(label)}</dt><dd ${count === undefined ? '' : `data-count="${count}"`}>${escapeHTML(value)}</dd></div>`;
     this.root.innerHTML = `
       <header class="result-top"><span>${escapeHTML(labels.report)}</span><span>${escapeHTML(labels.city)}</span></header>
       <div class="result-content">
@@ -74,7 +82,9 @@ export class EndGameScene {
         <h1 class="result-title" tabindex="-1">${escapeHTML(profile.title)}</h1>
         <p class="result-description">${escapeHTML(profile.description)}</p>
         <div class="result-divider" aria-hidden="true"><span>◆</span></div>
-        <dl class="result-stats">${stat(labels.score,number(this.data.score))}${stat(labels.bestScore,number(this.data.bestScore))}${stat(labels.time,formatPlayTime(this.data.elapsedSeconds))}</dl>
+        <dl class="result-stats">${stat(labels.score,number(this.data.score),this.data.score)}${stat(labels.bestScore,number(this.data.bestScore),this.data.bestScore)}${stat(LOBBY.scoring.labels.time,formatPlayTime(this.data.elapsedSeconds))}</dl>
+        <p class="result-record" ${this.data.newRecord ? '' : 'hidden'}>${escapeHTML(LOBBY.scoring.labels.record)}</p>
+        ${this.scoreSummary()}
         <p class="result-demo" ${this.data.demo ? '' : 'hidden'}>${escapeHTML(labels.demo)}</p>
         <div class="result-medals" ${result === 'victory' ? '' : 'hidden'} aria-disabled="true"><span aria-hidden="true">☆ ☆ ☆</span>${escapeHTML(labels.medals)} · ${escapeHTML(labels.soon)}</div>
         <section class="result-team" ${config.features.twoPlayers ? '' : 'hidden'} aria-label="${escapeHTML(labels.players)}">${[0,1].map(index => {
@@ -87,6 +97,8 @@ export class EndGameScene {
       </div>
       <footer class="result-bottom"><span>${escapeHTML(profile.footer)}</span><div class="audio-controls"><span class="audio-caption"></span><input aria-label="${escapeHTML(labels.volume)}" type="range" min="0" max="1" step="0.01" value="${this.audio.volume}"><button class="mute-button" aria-label="${escapeHTML(labels.mute)}" aria-pressed="false">${SOUND_ICON}</button></div></footer><div class="lobby-grain" aria-hidden="true"></div>`;
     loadLogo(this.root);
+    this.counters = [...this.root.querySelectorAll('[data-count]')];
+    this.updateCounters();
     const skinPath = this.data.skin.image || config.assets.skinPlaceholder;
     if (config.features.skinPreview && skinPath) {
       const image = this.root.querySelector('.skin-image');
@@ -109,6 +121,30 @@ export class EndGameScene {
     this.syncAudio();
   }
   blocked() { return this.isTransitioning() || this.time < LOBBY.endScreens.inputDelay; }
+  /** Agrupa valores iguais, mantendo a conta correta quando cada tipo vale pontos diferentes. */
+  scoreSummary() {
+    if (!this.data.scoring) return '';
+    const labels = LOBBY.scoring.labels;
+    const row = (label, detail, value) => `<div><dt>${escapeHTML(label)}<small>${escapeHTML(detail)}</small></dt><dd data-count="${value}">${value.toLocaleString('pt-BR')}</dd></div>`;
+    const detail = category => {
+      const groups = new Map();
+      for (const entry of this.data.breakdown.filter(item => item.category === category)) groups.set(entry.unitPoints, (groups.get(entry.unitPoints) ?? 0) + entry.count);
+      return [...groups].map(([points,count]) => `${count} × ${points.toLocaleString('pt-BR')}`).join(' + ') || '0';
+    };
+    let rows = row(labels.mobs, detail('mob'), this.data.mobPoints) + row(labels.bosses, detail('boss'), this.data.bossPoints);
+    if (this.result === 'victory') rows += row(labels.bonus, '', this.data.timeBonus);
+    const previous = Math.max(0, this.data.bonusTotal - this.data.timeBonus);
+    if (previous) rows += row(labels.previousBonus, '', previous);
+    return `<dl class="result-breakdown">${rows}</dl>`;
+  }
+  updateCounters() {
+    const progress = this.reduced || this.result !== 'victory' ? 1 : Math.min(1, this.time / LOBBY.scoring.countDuration);
+    const eased = 1 - (1 - progress) ** 3;
+    for (const node of this.counters ?? []) {
+      const text = Math.floor(Number(node.dataset.count) * eased).toLocaleString('pt-BR');
+      if (node.textContent !== text) node.textContent = text;
+    }
+  }
   activate(id) {
     const button = this.buttons.find(item => item.id === id);
     if (!button?.enabled || this.blocked()) return false;
@@ -128,6 +164,7 @@ export class EndGameScene {
   }
   update(ms) {
     this.time += ms; this.audio.update(ms); this.navigation?.update(ms); this.syncAudio();
+    this.updateCounters();
   }
   draw(ctx, width, height) {
     const aspect = this.root?.clientHeight ? this.root.clientWidth / this.root.clientHeight : null;
@@ -144,6 +181,7 @@ export class EndGameScene {
   }
   unmount() {
     this.navigation?.destroy(); this.navigation = null; this.audio.leave();
+    this.counters = [];
     if (!this.root) return;
     this.root.classList.remove('lobby','end-screen','end-defeat','end-victory');
     for (const property of ['--lobby-accent','--lobby-text','--lobby-pulse']) this.root.style.removeProperty(property);

@@ -17,6 +17,7 @@ export class Penguin extends Character {
     super({ x, y, w: 40, h: 60, maxHp: 25 });
     this.spriteKey = 'penguin';
 
+    this.scoreType = 'Penguin';
     this.name = 'Pinguim';
     this.shootCooldown = 120 + Math.floor(Math.random() * 60);
     this.speed = 1.3;

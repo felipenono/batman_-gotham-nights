@@ -17,6 +17,7 @@ export class TwoFace extends Character {
     super({ x, y, w: 40, h: 80, maxHp: 150 });
     this.spriteKey = 'two_face';
 
+    this.scoreType = 'TwoFace';
     this.name = 'Duas-Caras';
     this.isBoss = true;
 

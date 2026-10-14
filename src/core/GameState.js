@@ -18,6 +18,7 @@
 export const GameState = Object.freeze({
   MENU: 'MENU',                         // Tela de título e aguardo de início
   PLAYING: 'PLAYING',                   // Loop de combate ativo
+  PAUSED: 'PAUSED',                     // Mundo e cronômetro congelados
   LEVEL_TRANSITION: 'LEVEL_TRANSITION', // Cortina art déco de avanço entre fases
   GAME_OVER: 'GAME_OVER',               // Derrota do Batman e menu de reinício
   VICTORY: 'VICTORY',                   // Triunfo final após derrotar todos os chefes

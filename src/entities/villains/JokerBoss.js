@@ -4,7 +4,7 @@ import { GasBomb } from '../projectiles/GasBomb.js';
 
 export class JokerBoss extends Joker {
   constructor(options) {
-    super(options);
+    super(options); this.scoreType = 'JokerBoss';
     this.isBoss = true;
     this.w = 52;
     this.h = 94;

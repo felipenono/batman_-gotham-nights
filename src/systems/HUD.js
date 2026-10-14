@@ -19,6 +19,8 @@
 
 import { drawBatarang } from '../utils/batSymbols.js';
 import { PROJECTILE } from '../utils/constants.js';
+import { LOBBY } from '../config/lobby.js';
+import { formatPlayTime } from '../scenes/EndGameScene.js';
 
 export class HUD {
   /**
@@ -39,7 +41,7 @@ export class HUD {
    * @param {number} width
    * @param {number} height
    */
-  static draw(ctx, player, levelConfig, killsInLevel = 0, boss = null, width = 900, height = 500, isMuted = false, batarangsAvailable = PROJECTILE.BATARANG_MAX_ACTIVE) {
+  static draw(ctx, player, levelConfig, killsInLevel = 0, boss = null, width = 900, height = 500, isMuted = false, batarangsAvailable = PROJECTILE.BATARANG_MAX_ACTIVE, score = null) {
     if (!player) return;
 
     ctx.save();
@@ -161,6 +163,18 @@ export class HUD {
     ctx.shadowBlur = 0;
     ctx.fillText(isMuted ? '🔇 [M] SEM SOM' : '🔊 [M] SOM LIGADO', width - 24, 76);
 
+    if (score) {
+      const config = LOBBY.scoring, reduced = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      ctx.shadowBlur = 0; ctx.fillStyle = config.colors.panel;
+      ctx.fillRect(width - 225, 91, 213, 63);
+      ctx.textAlign = 'right'; ctx.fillStyle = config.colors.muted; ctx.font = `10px ${config.font}`;
+      ctx.fillText(`${config.labels.time}  ${formatPlayTime(score.elapsedSeconds)}`, width - 24, 128);
+      ctx.fillText(config.labels.pauseHint, width - 24, 144);
+      ctx.save(); ctx.translate(width - 24, 111);
+      const scale = 1 + (reduced ? 0 : config.pulseScale * score.pulse / config.pulseDuration);
+      ctx.scale(scale, scale); ctx.fillStyle = config.colors.accent; ctx.font = `18px ${config.font}`;
+      ctx.fillText(`${config.labels.score}  ${score.score.toLocaleString('pt-BR')}`, 0, 0); ctx.restore();
+    }
     ctx.restore();
   }
 }

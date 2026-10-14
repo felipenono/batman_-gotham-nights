@@ -42,6 +42,7 @@ export class Scarecrow extends Character {
     this.spriteKey = 'scarecrow';
 
     // [POO - Encapsulamento de Atributos de Chefe]
+    this.scoreType = 'Scarecrow';
     this.name = 'Espantalho';
     this.isBoss = true;      // Sinalizador polimórfico de chefe
 

@@ -61,3 +61,31 @@
   .result-team{grid-template-columns:1fr;}.result-skin{flex-wrap:wrap;justify-content:center;}
 }
 @media(prefers-reduced-motion:reduce) {.result-title{animation:none!important;}}
+
+/* Resumo calculado pelo placar; a tela continua rolável em alturas pequenas. */
+.result-record {color:var(--result-accent);font-size:11px;letter-spacing:2px;margin-top:12px;}
+.result-breakdown {width:min(640px,100%);margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;color:var(--result-muted);font-size:10px;}
+.result-breakdown>div {display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--result-border);padding:8px 0;}
+.result-breakdown dt {text-align:left;}.result-breakdown small {display:block;margin-top:4px;}
+.result-breakdown dd {color:var(--result-accent);font-variant-numeric:tabular-nums;font-size:16px;}
+@media(max-width:649px) {.result-breakdown{grid-template-columns:1fr;}}
+@media(max-height:900px) and (min-width:650px) {
+  .result-content:has(.result-breakdown) {padding:8px 0;}
+  .result-content:has(.result-breakdown) .lobby-crest {width:100px;height:32px;margin-bottom:10px;}
+  .result-content:has(.result-breakdown) .result-title {font-size:46px;}
+  .result-content:has(.result-breakdown) .result-eyebrow {margin-bottom:8px;}
+  .result-content:has(.result-breakdown) .result-description {margin-top:8px;}
+  .result-content:has(.result-breakdown) .result-divider {margin:12px 0;}
+  .result-content:has(.result-breakdown) .result-stat {padding:12px;}
+  .result-content:has(.result-breakdown) .result-actions {margin-top:14px;}
+  .result-content:has(.result-breakdown) .result-breakdown {margin-top:8px;}
+  .result-content:has(.result-breakdown) .result-medals {margin-top:8px;}
+}
+
+/* Pausa sem alterar o desenho do canvas ou o relógio da fase. */
+#screen-ui.pause-screen {pointer-events:auto;background:var(--score-panel);color:var(--score-text);}
+.pause-panel {display:grid;gap:22px;justify-items:center;}
+.pause-panel h1 {font:clamp(28px,5vw,64px) var(--score-font);color:var(--score-accent);}
+.pause-panel button {padding:16px 48px;background:var(--score-accent);color:var(--score-panel);border:0;cursor:pointer;font-weight:800;}
+.pause-panel button:focus-visible {outline:2px solid var(--score-text);outline-offset:5px;}
+.pause-panel p {font-size:12px;color:var(--score-muted);}
