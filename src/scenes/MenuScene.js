@@ -30,7 +30,7 @@ export class MenuScene {
     this.root.innerHTML = `
       <svg class="svg-defs" aria-hidden="true"><defs><filter id="bat-cutout" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0.91 0 0 0 0 0.77 0 0 0 0 0.42 -0.3333 -0.3333 -0.3333 0 1"/><feComposite in2="SourceAlpha" operator="in"/></filter></defs></svg><header class="lobby-top"><a class="studio-mark" href="#" aria-label="Batman: Noites de Gotham"><span class="brand-square">DC</span><span>GOTHAM<br><b>KNIGHTS</b></span></a><span class="edition">AÇÃO & SOBREVIVÊNCIA <i></i> EDIÇÃO NOTURNA</span></header>
       <div class="lobby-content"><div class="lobby-crest"><span class="crest-fallback" aria-hidden="true">◆</span><img alt="Símbolo do Batman" class="bat-logo"></div>
-      <p class="lobby-kicker">QUANDO A CIDADE DORME</p><h1 class="lobby-title">BATMAN<span>NOITES DE GOTHAM</span></h1>
+      <p class="lobby-kicker">QUANDO A CIDADE DORME</p><h1 class="lobby-title">BATMAN<span>NOITES DOS VILÕES</span></h1>
       <p class="lobby-description">A noite pertence aos que não têm medo.</p>
       <nav class="lobby-menu" aria-label="Menu principal">${LOBBY.buttons.map((b, i) => `<button class="lobby-button ${i === 0 ? 'primary' : ''}" data-menu-id="${b.id}" ${b.enabled ? '' : 'disabled'}><span class="menu-icon">${b.enabled ? '▶' : lock}</span><span class="menu-label">${b.label}<small>${b.detail}</small></span><span class="menu-end">${b.enabled ? '↵' : lock}</span></button>`).join('')}</nav>
       <p class="menu-navigation"><kbd>↑</kbd><kbd>↓</kbd> NAVEGAR <span></span><kbd>ENTER</kbd> SELECIONAR</p></div>
