@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prévia das telas de resultado</title>
+  <link rel="stylesheet" href="../src/styles/game.css">
+  <link rel="stylesheet" href="../src/styles/lobby.css">
+  <link rel="stylesheet" href="../src/styles/end-game.css">
+</head>
+<body>
+  <div class="game-wrapper"><div class="arcade-cabinet">
+    <canvas id="game-canvas" width="1920" height="1080"></canvas>
+    <section id="screen-ui" aria-label="Telas do jogo"></section>
+    <div id="scene-transition" aria-hidden="true"></div>
+  </div></div>
+  <script type="module">
+    import { Game } from '../src/core/Game.js';
+    import { loadSprites } from '../src/utils/SpriteAnimator.js';
+    import { LOBBY } from '../src/config/lobby.js';
+    const query = new URLSearchParams(location.search);
+    if (query.has('coop')) { LOBBY.endScreens.features.twoPlayers = true; LOBBY.endScreens.features.skinPreview = true; }
+    await loadSprites();
+    const game = new Game(document.querySelector('canvas'));
+    game.restartGame(2);
+    game.start();
+    game.showEndScreen(query.get('result') === 'victory' ? 'victory' : 'defeat', {
+      players: [{ name:'JOGADOR 1', score:14800 }, { name:'JOGADOR 2', score:12600 }],
+      skin: {name:'Traje clássico'},
+    });
+  </script>
+</body></html>

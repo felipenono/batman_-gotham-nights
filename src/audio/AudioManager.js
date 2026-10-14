@@ -20,6 +20,7 @@
  */
 
 import { AUDIO_CONFIG } from './AudioConfig.js';
+import { LOBBY } from '../config/lobby.js';
 import { MusicComposer } from './MusicComposer.js';
 import { SoundEffects } from './SoundEffects.js';
 
@@ -114,9 +115,11 @@ export class AudioManager {
       this.tempo = AUDIO_CONFIG.TEMPOS.ROOFTOPS;
     } else if (track === 'menu') {
       this.tempo = AUDIO_CONFIG.TEMPOS.MENU;
+    } else if (LOBBY.endScreens.screens[track]) {
+      this.tempo = LOBBY.endScreens.screens[track].audio.tempo;
     }
 
-    if (!this.ctx) {
+    if (!this.ctx && !deferContext) {
       this._initContext();
     }
   }
@@ -166,8 +169,18 @@ export class AudioManager {
 
   setBgmVolume(val) {
     if (this.bgmGain && this.ctx) {
+      this.bgmGain.gain.cancelScheduledValues(this.ctx.currentTime);
       this.bgmGain.gain.setValueAtTime(Math.max(0, Math.min(1, val)), this.ctx.currentTime);
     }
+  }
+
+  /** Fade da trilha da partida antes de trocar para uma tela de resultado. */
+  fadeBgmVolume(value, duration) {
+    if (!this.bgmGain || !this.ctx) return;
+    const gain = this.bgmGain.gain, now = this.ctx.currentTime;
+    gain.cancelScheduledValues(now);
+    gain.setValueAtTime(gain.value, now);
+    gain.linearRampToValueAtTime(value, now + duration / 1000);
   }
 
   setSfxVolume(val) {

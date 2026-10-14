@@ -1,9 +1,8 @@
-import { LOBBY, assetURL } from '../config/lobby.js';
+import { LOBBY } from '../config/lobby.js';
 import { LobbyAudioManager } from '../audio/LobbyAudioManager.js';
 import { GothamBackdrop } from './GothamBackdrop.js';
 
-const lock = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="10" width="12" height="10" rx="2"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>';
-const speaker = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h4l5-4v12l-5-4H4zM16 8q5 4 0 8M19 5q8 7 0 14"/></svg>';
+import { LOCK_ICON as lock, SOUND_ICON as speaker, logoMarkup, loadLogo } from '../ui/ScreenElements.js';
 
 /** UI acessível em HTML; o canvas desenha exclusivamente o cenário. */
 export class MenuScene {
@@ -28,17 +27,14 @@ export class MenuScene {
     document.documentElement.style.setProperty('--lobby-fog', `${LOBBY.motion.fog}ms`);
     this.root.classList.add('lobby');
     this.root.innerHTML = `
-      <svg class="svg-defs" aria-hidden="true"><defs><filter id="bat-cutout" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0.91 0 0 0 0 0.77 0 0 0 0 0.42 -0.3333 -0.3333 -0.3333 0 1"/><feComposite in2="SourceAlpha" operator="in"/></filter></defs></svg><header class="lobby-top"><a class="studio-mark" href="#" aria-label="Batman: Noites de Gotham"><span class="brand-square">DC</span><span>GOTHAM<br><b>KNIGHTS</b></span></a><span class="edition">AÇÃO & SOBREVIVÊNCIA <i></i> EDIÇÃO NOTURNA</span></header>
-      <div class="lobby-content"><div class="lobby-crest"><span class="crest-fallback" aria-hidden="true">◆</span><img alt="Símbolo do Batman" class="bat-logo"></div>
+      <header class="lobby-top"><a class="studio-mark" href="#" aria-label="Batman: Noites de Gotham"><span class="brand-square">DC</span><span>GOTHAM<br><b>KNIGHTS</b></span></a><span class="edition">AÇÃO & SOBREVIVÊNCIA <i></i> EDIÇÃO NOTURNA</span></header>
+      <div class="lobby-content">${logoMarkup()}
       <p class="lobby-kicker">QUANDO A CIDADE DORME</p><h1 class="lobby-title">BATMAN<span>NOITES DOS VILÕES</span></h1>
       <p class="lobby-description">A noite pertence aos que não têm medo.</p>
       <nav class="lobby-menu" aria-label="Menu principal">${LOBBY.buttons.map((b, i) => `<button class="lobby-button ${i === 0 ? 'primary' : ''}" data-menu-id="${b.id}" ${b.enabled ? '' : 'disabled'}><span class="menu-icon">${b.enabled ? '▶' : lock}</span><span class="menu-label">${b.label}<small>${b.detail}</small></span><span class="menu-end">${b.enabled ? '↵' : lock}</span></button>`).join('')}</nav>
       <p class="menu-navigation"><kbd>↑</kbd><kbd>↓</kbd> NAVEGAR <span></span><kbd>ENTER</kbd> SELECIONAR</p></div>
       <footer class="lobby-bottom"><div class="city-status"><i></i> GOTHAM CITY <span>•</span> 00:07 AM <small>A CIDADE PRECISA DE VOCÊ.</small></div><div class="audio-controls"><span class="audio-caption">TRILHA SONORA</span><input aria-label="Volume" type="range" min="0" max="1" step="0.01" value="${this.audio.volume}"><button class="mute-button" aria-label="Silenciar áudio" aria-pressed="false">${speaker}</button></div></footer><div class="lobby-grain" aria-hidden="true"></div>`;
-    const image = this.root.querySelector('.bat-logo');
-    image.addEventListener('load', () => this.root.querySelector('.crest-fallback')?.setAttribute('hidden', ''));
-    image.addEventListener('error', () => { image.hidden = true; });
-    image.src = assetURL(LOBBY.assets.logo);
+    loadLogo(this.root);
     this.root.querySelectorAll('[data-menu-id]').forEach(button => {
       button.addEventListener('click', () => this.activate(button.dataset.menuId));
     });
@@ -54,6 +50,7 @@ export class MenuScene {
     window.addEventListener('pointerdown', this.unlock);
     window.addEventListener('keydown', this.onKey);
     this.audio.enter();
+    this.root.querySelector('input').value = this.audio.volume;
     this.syncAudio();
   }
   unmount() {

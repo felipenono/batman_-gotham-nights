@@ -111,6 +111,8 @@ test('real game completes all boss queues and three phase transitions at 1080p',
   }
   if(stage<3){assert.equal(game.state,'LEVEL_TRANSITION');while(game.state==='LEVEL_TRANSITION')game._update(1);}
  }
+ assert.equal(game.sceneManager.transition.name,'EndGameScene');
+ game.sceneManager.update(game.sceneManager.transition.duration * 2);
  assert.equal(game.state,'VICTORY');game.input.destroy();game.mouse.destroy();
 });
 

@@ -44,7 +44,8 @@ import { LevelManager } from '../systems/LevelManager.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../systems/HUD.js';
 import { ScreenUI } from '../systems/ScreenUI.js';
-import { drawBatCrest } from '../utils/batSymbols.js';
+import { LOBBY } from '../config/lobby.js';
+import { normalizeResultData } from '../scenes/EndGameScene.js';
 
 export class Game {
   /**
@@ -108,11 +109,13 @@ export class Game {
    */
   start() {
     this.lastTime = performance.now();
-    this.soundManager.setTrack('menu');
+    this.screenUI.update();
     requestAnimationFrame(this._loop);
   }
 
-  restartGame() {
+  restartGame(levelIndex = 1) {
+    // Derrota pode retomar a fase atual; uma nova campanha continua começando na fase 1.
+    levelIndex = Number.isInteger(levelIndex) ? Math.max(1, Math.min(this.levelManager.totalLevels, levelIndex)) : 1;
     this.deathEffects = [];
     this.input._onBlur();this.mouse._onBlur();
     this.gameOverCooldown = 0;
@@ -120,12 +123,19 @@ export class Game {
     this.enemies = [];
     this.projectiles = [];
     this.spawner.totalKills = 0;
-    this.levelManager.currentLevelIndex = 1;
+    this.levelManager.currentLevelIndex = levelIndex;
     this.levelManager.transitionTimer = 0;
     this.bossManager.reset();
-    this.initLevel(1);
+    this.initLevel(levelIndex);
     this.soundManager.setTrack('rooftops');
     this.state = GameState.PLAYING;
+  }
+
+  /** API pública: recebe dados da partida. Sem placar pronto, usa exemplos configuráveis. */
+  showEndScreen(result, data = {}) {
+    if (!LOBBY.endScreens.screens[result]) throw new Error(`Resultado desconhecido: ${result}`);
+    const payload = normalizeResultData({ levelIndex: this.levelManager.currentLevelIndex, ...data });
+    return this.sceneManager.goTo('EndGameScene', { result, data: payload });
   }
 
   initLevel(levelIndex = 1) {
@@ -156,8 +166,8 @@ export class Game {
       this.accumulatedTime -= this.fixedStep;
     }
 
-    this._render();
     this.screenUI.update();
+    this._render();
     requestAnimationFrame(this._loop);
   }
 
@@ -171,6 +181,9 @@ export class Game {
     if (this.input.isKeyJustPressed('m') || this.input.isKeyJustPressed('M')) {
       this.soundManager.toggleMute();
     }
+
+    // Congela o mundo durante a cortina, sem interromper áudio e animações das telas.
+    if (this.sceneManager.transition && [GameState.PLAYING, GameState.LEVEL_TRANSITION].includes(this.state)) return;
 
     switch (this.state) {
       case GameState.MENU:
@@ -187,10 +200,8 @@ export class Game {
 
       case GameState.GAME_OVER:
       case GameState.VICTORY:
-        if (this.gameOverCooldown > 0) { this.gameOverCooldown -= dt; break; }
-        if (this.input.isKeyJustPressed('Escape')) {
-          this.state = GameState.MENU; this.soundManager.setTrack('menu');
-        } else if (this.input.justPressed('START')) this.restartGame();
+        this.gameOverCooldown = Math.max(0, this.gameOverCooldown - dt);
+        this.screenUI.end.update(dt * 1000 / 60);
         break;
     }
   }
@@ -218,10 +229,7 @@ export class Game {
 
     // Check player game over
     if (!this.player.alive) {
-      this.state = GameState.GAME_OVER;
-      this.gameOverCooldown = 20; // 20 frames delay to show game over screen before accepting restart
-      this.soundManager.setTrack(null);
-      this.playSound('gameover');
+      this.showEndScreen('defeat');
       return;
     }
 
@@ -275,9 +283,7 @@ export class Game {
       });
 
       if (nextAction === 'VICTORY') {
-        this.state = GameState.VICTORY;
-        this.soundManager.setTrack(null);
-        this.playSound('victory');
+        this.showEndScreen('victory');
       } else {
         this.state = GameState.LEVEL_TRANSITION;
       }
@@ -287,6 +293,8 @@ export class Game {
       this.camera.shake(8, 12);
       this.playSound('boss_enter');
     });
+
+    if (this.sceneManager.transition) return;
 
     // 5. Update Common Enemies
     for (let i = this.enemies.length - 1; i >= 0; i--) {
@@ -429,12 +437,10 @@ export class Game {
   _renderLevelTransition() { this.levelManager.drawTransition(this.ctx, this.width, this.height); }
 
   _renderGameOver() {
-    this.ctx.fillStyle = '#120a10'; this.ctx.fillRect(0, 0, this.width, this.height);
-    drawBatCrest(this.ctx, this.width / 2, 105, 160);
+    this.screenUI.end.draw(this.ctx, this.width, this.height);
   }
 
   _renderVictory() {
-    this.ctx.fillStyle = '#08151c'; this.ctx.fillRect(0, 0, this.width, this.height);
-    drawBatCrest(this.ctx, this.width / 2, 105, 160);
+    this.screenUI.end.draw(this.ctx, this.width, this.height);
   }
 }

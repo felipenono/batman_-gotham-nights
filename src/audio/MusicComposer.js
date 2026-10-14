@@ -4,6 +4,8 @@
  * Synthesizes multi-track gothic orchestral arrangements via Web Audio API.
  */
 
+import { LOBBY } from '../config/lobby.js';
+
 export class MusicComposer {
   /**
    * Schedules notes for a single 16th-note step across all instruments.
@@ -24,6 +26,17 @@ export class MusicComposer {
       MusicComposer._playBossTheme(time, step, bar, stepInBar, ctx, destination);
     } else if (track === 'menu') {
       MusicComposer._playMenuTheme(time, step, bar, stepInBar, ctx, destination);
+    } else if (track === 'defeat' || track === 'victory') {
+      // Fallbacks discretos para os MP3 ainda não fornecidos.
+      const notes = LOBBY.endScreens.screens[track].audio.notes;
+      const note = notes[bar % notes.length];
+      if (stepInBar === 0) {
+        MusicComposer.playPad(time, note, 2.4, 0.16, ctx, destination);
+        MusicComposer.playBell(time, note * 2, 1.3, 0.1, ctx, destination);
+      }
+      if (track === 'victory' && stepInBar % 8 === 0) {
+        MusicComposer.playBrass(time, note * (stepInBar ? 1.5 : 1), 0.65, 0.1, ctx, destination);
+      }
     }
   }
 

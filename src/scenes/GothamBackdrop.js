@@ -3,7 +3,10 @@ import { BatSignal, moonLayout, visibleSky } from './BatSignal.js';
 
 /** Cenário vetorial determinístico: sem imagens obrigatórias ou sorteio por quadro. */
 export class GothamBackdrop {
-  constructor() {
+  constructor(profile = {}) {
+    this.colors = { ...LOBBY.colors, ...profile.colors };
+    this.weather = { rainCount: 100, fogOpacity: 0.055, fogStart: 0.055, fogDissipate: 0,
+      fogColor: '#8fa9bc', rainColor: '#c0d7e414', ...profile.weather };
     let seed = 27;
     const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     this.layers = [0, 1, 2].map(layer => {
@@ -16,12 +19,13 @@ export class GothamBackdrop {
       }
       return buildings;
     });
-    this.batSignal = new BatSignal();
+    this.batSignal = new BatSignal({ ...LOBBY.batSignal, ...profile.signal,
+      colors: { ...LOBBY.batSignal.colors, ...profile.signal?.colors } });
     this.reflectorBuilding = null;
     this.screenAspect = undefined;
   }
   draw(ctx, width, height, time, pointer = 0, reduced = false, screenAspect = null) {
-    const c = LOBBY.colors;
+    const c = this.colors, weather = this.weather;
     ctx.save();
     ctx.scale(width / LOBBY.base.width, height / LOBBY.base.height);
     const sky = ctx.createLinearGradient(0, 0, 0, 1080);
@@ -31,7 +35,7 @@ export class GothamBackdrop {
     if (!this.reflectorBuilding || this.screenAspect !== screenAspect) {
       // Seleciona uma vez por redimensionamento; o refletor permanece no mesmo prédio.
       const visible = visibleSky(LOBBY.base.width, LOBBY.base.height, screenAspect);
-      const target = visible.x + visible.width * LOBBY.batSignal.sourceX;
+      const target = visible.x + visible.width * this.batSignal.config.sourceX;
       this.reflectorBuilding = this.layers[2].filter(building => !building.spire).reduce((nearest, building) =>
         Math.abs(building.x + building.width / 2 - target) < Math.abs(nearest.x + nearest.width / 2 - target) ? building : nearest);
       this.screenAspect = screenAspect;
@@ -75,14 +79,18 @@ export class GothamBackdrop {
       ctx.restore();
       const drift = reduced ? 0 : Math.sin(time / LOBBY.motion.fog * Math.PI * 2 + layer) * 24;
       const fog = ctx.createLinearGradient(0, ground - 180 + drift, 0, ground + 30 + drift);
-      fog.addColorStop(0, '#8fa9bc00'); fog.addColorStop(0.6, '#8fa9bc0e'); fog.addColorStop(1, '#8fa9bc00');
+      fog.addColorStop(0, weather.fogColor + '00'); fog.addColorStop(0.6, weather.fogColor); fog.addColorStop(1, weather.fogColor + '00');
+      ctx.save();
+      const dissipate = weather.fogDissipate ? Math.min(1, time / weather.fogDissipate) : 1;
+      ctx.globalAlpha = weather.fogStart + (weather.fogOpacity - weather.fogStart) * dissipate;
       ctx.fillStyle = fog; ctx.fillRect(0, ground - 180, 1920, 230);
+      ctx.restore();
     });
-    this.batSignal.drawReflector(ctx, source, moonLayout(LOBBY.base.width, LOBBY.base.height, LOBBY.batSignal, screenAspect), time, reduced);
+    this.batSignal.drawReflector(ctx, source, moonLayout(LOBBY.base.width, LOBBY.base.height, this.batSignal.config, screenAspect), time, reduced);
     if (!reduced) {
-      ctx.strokeStyle = '#c0d7e414'; ctx.lineWidth = 1;
+      ctx.strokeStyle = weather.rainColor; ctx.lineWidth = 1;
       ctx.beginPath();
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < weather.rainCount; i++) {
         const x = (i * 139 + time * 0.018) % 2000;
         const y = (i * 97 + time * 0.5) % 1080;
         ctx.moveTo(x, y); ctx.lineTo(x - 7, y + 24);
