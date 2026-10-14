@@ -209,3 +209,7 @@ Com `npm run dev` ativo, você também pode abrir:
 - **http://localhost:3000/tests/screens.html**: confira as telas, a morte do jogador e os quadros de animação, incluindo a verificação de cortes nas bordas.
 
 Se o Vite utilizar outra porta, substitua `3000` pelo valor mostrado no terminal. Essas páginas são ferramentas de desenvolvimento e não fazem parte da compilação de produção.
+
+## Lobby cinematográfico
+
+O menu inicial tem skyline de Gotham com parallax, névoa, chuva e Bat-Sinal, áudio opcional em loop e navegação por mouse, teclado ou controle. Veja [LOBBY.md](LOBBY.md) para a estrutura completa, os caminhos de assets e como habilitar os botões futuros.

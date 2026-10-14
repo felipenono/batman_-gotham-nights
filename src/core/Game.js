@@ -1,3 +1,4 @@
+import { SceneManager } from './SceneManager.js';
 import { Viewport } from './Viewport.js';
 /**
  * ============================================================================
@@ -84,6 +85,7 @@ export class Game {
     this.projectiles = [];       // Array de instâncias polimórficas de Projectile (Batarang, Teeth, etc.)
     this.deathEffects = [];
     this.screenUI = new ScreenUI(this, globalThis.document?.getElementById('screen-ui'));
+    this.sceneManager = new SceneManager(this);
     this.currentLevel = null;    // Instância de Level (Mundo e plataformas)
 
     // Menu and screen timers
@@ -163,6 +165,7 @@ export class Game {
     this.input.update();
     this.mouse.update(this.camera.renderX, this.camera.renderY);
     this.menuAnimTime += dt * 0.05;
+    this.sceneManager.update(dt * 1000 / 60);
 
     // Toggle audio mute with M key
     if (this.input.isKeyJustPressed('m') || this.input.isKeyJustPressed('M')) {
@@ -171,14 +174,7 @@ export class Game {
 
     switch (this.state) {
       case GameState.MENU:
-        if (
-          this.input.justPressed('START') ||
-          this.input.isKeyJustPressed(' ') ||
-          this.input.isKeyJustPressed('Enter') ||
-          this.mouse.justClicked
-        ) {
-          this.restartGame();
-        }
+        this.screenUI.menu.update(dt * 1000 / 60);
         break;
 
       case GameState.PLAYING:
@@ -427,9 +423,7 @@ export class Game {
   }
 
   _renderMenu() {
-    const ctx = this.ctx;
-    ctx.fillStyle = '#080d17'; ctx.fillRect(0, 0, this.width, this.height);
-    drawBatCrest(ctx, this.width / 2, 160, 350);
+    this.screenUI.menu.draw(this.ctx, this.width, this.height);
   }
 
   _renderLevelTransition() { this.levelManager.drawTransition(this.ctx, this.width, this.height); }

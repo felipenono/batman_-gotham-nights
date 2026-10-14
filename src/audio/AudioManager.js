@@ -34,6 +34,7 @@ export class AudioManager {
     this.bgmGain = null;
     this.sfxGain = null;
     this.isMuted = false;
+    this.masterVolume = AUDIO_CONFIG.VOLUMES.MASTER;
 
     // Estados do Sequenciador Musical
     this.currentTrack = null; // 'menu' | 'rooftops' | 'boss'
@@ -60,7 +61,7 @@ export class AudioManager {
       // Master Output
       this.masterGain = this.ctx.createGain();
       this.masterGain.gain.setValueAtTime(
-        this.isMuted ? 0 : AUDIO_CONFIG.VOLUMES.MASTER,
+        this.isMuted ? 0 : this.masterVolume,
         this.ctx.currentTime
       );
       this.masterGain.connect(this.ctx.destination);
@@ -91,7 +92,7 @@ export class AudioManager {
     this.isMuted = !this.isMuted;
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setValueAtTime(
-        this.isMuted ? 0 : AUDIO_CONFIG.VOLUMES.MASTER,
+        this.isMuted ? 0 : this.masterVolume,
         this.ctx.currentTime
       );
     }
@@ -102,7 +103,7 @@ export class AudioManager {
    * Sets the active background soundtrack.
    * @param {'menu' | 'rooftops' | 'boss' | null} track
    */
-  setTrack(track) {
+  setTrack(track, { deferContext = false } = {}) {
     if (this.currentTrack === track) return;
     this.currentTrack = track;
     this.step = 0;
@@ -137,6 +138,7 @@ export class AudioManager {
   _scheduler() {
     if (!this.ctx || this.isMuted || !this.currentTrack) return;
 
+    this.nextNoteTime = Math.max(this.nextNoteTime, this.ctx.currentTime);
     const scheduleAheadTime = 0.12; // 120ms lookahead
     while (this.nextNoteTime < this.ctx.currentTime + scheduleAheadTime) {
       MusicComposer.scheduleStep(
@@ -156,6 +158,7 @@ export class AudioManager {
 
   // Volume setters for easy runtime balancing
   setMasterVolume(val) {
+    this.masterVolume = Math.max(0, Math.min(1, val));
     if (this.masterGain && this.ctx && !this.isMuted) {
       this.masterGain.gain.setValueAtTime(Math.max(0, Math.min(1, val)), this.ctx.currentTime);
     }
