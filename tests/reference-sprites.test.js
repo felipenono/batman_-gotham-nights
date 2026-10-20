@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {maskBackdrop,REFERENCE_URLS} from '../src/assets/sprites/referenceSprites.js';
+import {maskBackdrop,REFERENCE_URLS} from '../src/views/sprites/referenceSprites.js';
 
 test('reference mask removes external white but keeps enclosed white costume details',()=>{
  const pixels=new Uint8ClampedArray(5*5*4).fill(255);

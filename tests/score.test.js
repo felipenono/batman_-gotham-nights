@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ScoreManager } from '../src/systems/ScoreManager.js';
+import { ScoreManager } from '../src/models/services/ScoreManager.js';
 import { LOBBY } from '../src/config/lobby.js';
-import { Game } from '../src/core/Game.js';
-import { Joker } from '../src/entities/villains/Joker.js';
-import { Batarang } from '../src/entities/projectiles/Batarang.js';
+import { Game } from '../src/controllers/GameController.js';
+import { Joker } from '../src/models/entities/villains/Joker.js';
+import { Batarang } from '../src/models/entities/projectiles/Batarang.js';
 
 test('faixas inclusivas de bônus e tempo ativo sem deriva nos limites', () => {
   const score = new ScoreManager({storage:null}); score.iniciarFase();

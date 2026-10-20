@@ -5,20 +5,40 @@
 <link rel="stylesheet" href="./browser.css">
 <h1>Batman: verificações no navegador</h1>
 <button id="verify">Executar verificações</button>
+<button id="penguin-audio">Verificar áudio do Pinguim</button>
 <button id="phase1">Fase 1</button><button id="phase2">Fase 2</button><button id="phase3">Fase 3</button>
 <button id="lights">Ligar/desligar luminárias</button>
 <button id="jokerboss">Coringa (chefe)</button><button id="scarecrowboss">Espantalho (chefe)</button><button id="step">Avançar 120 quadros</button><button id="animate">Animar combate</button><p id="details"></p>
 <canvas id="game-canvas" width="1920" height="1080"></canvas>
 <pre id="results">Pronto. As cenas ficam pausadas para inspeção.</pre>
 <script type="module">
-import {loadSprites} from '../src/utils/SpriteAnimator.js';
+import {loadSprites} from '../src/views/sprites/SpriteRenderer.js';
 await loadSprites();
-import {Game} from '../src/core/Game.js';
-import {Batarang} from '../src/entities/projectiles/Batarang.js';
-import {Penguin} from '../src/entities/villains/Penguin.js';
-import {PROJECTILE} from '../src/utils/constants.js';
+import {Game} from '../src/controllers/GameController.js';
+import {Batarang} from '../src/models/entities/projectiles/Batarang.js';
+import {Penguin} from '../src/models/entities/villains/Penguin.js';
+import {PROJECTILE} from '../src/config/constants.js';
+import { AUDIO_CONFIG } from '../src/config/configuracao.js';
 const canvas=document.querySelector('canvas'), results=document.querySelector('#results');
 const game=new Game(canvas);
+document.querySelector('#penguin-audio').onclick=async()=>{
+  try {
+    scene(2);
+    game.soundManager._initContext();
+    const names=AUDIO_CONFIG.GRUPOS_VOZES.penguin_hurt;
+    const buffers=await Promise.all(names.map(name=>game.soundManager._carregarVoz(name)));
+    if(buffers.some(buffer=>!buffer?.duration))throw Error('Não foi possível decodificar uma reação');
+    const penguin=new Penguin({x:650,y:380});
+    game.enemies=[penguin];
+    const before=penguin.hp;
+    const hit=new Batarang(penguin.x,penguin.y,0,0);
+    game.projectiles=[hit];
+    game.resolverCombate();
+    game._render();
+    if(penguin.hp>=before)throw Error('O impacto não aplicou dano');
+    results.textContent=buffers.map((buffer,index)=>'PASSOU: '+names[index]+' decodificado ('+buffer.duration.toFixed(2)+' s)').join('\n')+'\nPASSOU: impacto real no Pinguim dispara a reação aleatória pelo controller.';
+  } catch(error) {results.textContent='FALHOU: '+error.stack;}
+};
 function bossScene(type) {
  scene(1);game.bossManager.spawnBoss({...game.levelManager.currentLevelConfig,bosses:[type]},1100,500);game.bossManager.introTimer=0;game._render();describe();
 }
@@ -37,7 +57,7 @@ function scene(index) {
   game.player.x=560;game.player.y=368;game.player.invulnerable=99999;game.player.hurtFlash=0;
   game.camera.x=120;game.camera.y=0;
   game.input._onBlur();game.mouse._onBlur();
-  if(index===3)game.currentLevel.background.flickerTimer=0;
+  if(index===3)game.view.level.background.flickerTimer=0;
   game._render();
 }
 for(let i=1;i<=3;i++)document.querySelector('#phase'+i).onclick=()=>{
@@ -48,7 +68,7 @@ for(let i=1;i<=3;i++)document.querySelector('#phase'+i).onclick=()=>{
  game._render();
 };
 document.querySelector('#lights').onclick=()=>{
-  const lights=game.currentLevel.background.lights;
+  const lights=game.view.level.background.lights;
   if(lights)for(const light of lights)light.enabled=!light.enabled;
   game._render();
 };
@@ -115,7 +135,7 @@ document.querySelector('#verify').onclick=()=>{
       check(boss.x<startX&&walked,'chefão '+boss.name+' se desloca e anima os passos');
       check(attacked,'chefão '+boss.name+' executa seus ataques');
     }
-    scene(3);const bg=game.currentLevel.background;
+    scene(3);const bg=game.view.level.background;
     bg.lights.forEach(l=>l.enabled=false);game._render();
     check(bg.lights.every(l=>bg.lightIntensity(l)===0),'luzes desligadas sem emissão');
     scene(3);describe();

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BatSignal, moonLayout, symbolBounds, prepareSilhouette, visibleSky } from '../src/scenes/BatSignal.js';
+import { BatSignal, moonLayout, symbolBounds, prepareSilhouette, visibleSky } from '../src/views/scenes/BatSignal.js';
 import { LOBBY, assetURL } from '../src/config/lobby.js';
 
 test('lua e silhueta compartilham o centro em paisagem, retrato e ultrawide', () => {

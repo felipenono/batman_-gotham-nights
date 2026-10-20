@@ -1,16 +1,16 @@
 // Este arquivo verifica as correções autorizadas na primeira parte da refatoração.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GasBomb } from '../src/entities/projectiles/GasBomb.js';
-import { Spawner } from '../src/systems/Spawner.js';
-import { ScoreManager } from '../src/systems/ScoreManager.js';
+import { GasBomb } from '../src/models/entities/projectiles/GasBomb.js';
+import { Spawner } from '../src/models/services/Spawner.js';
+import { ScoreManager } from '../src/models/services/ScoreManager.js';
 import { LOBBY, LEVELS } from '../src/config/configuracao.js';
-import { Game } from '../src/core/Game.js';
-import { Joker } from '../src/entities/villains/Joker.js';
-import { Batarang } from '../src/entities/projectiles/Batarang.js';
-import { Character } from '../src/entities/Character.js';
-import { Viewport } from '../src/core/Viewport.js';
-import { normalizeResultData } from '../src/utils/resultData.js';
+import { Game } from '../src/controllers/GameController.js';
+import { Joker } from '../src/models/entities/villains/Joker.js';
+import { Batarang } from '../src/models/entities/projectiles/Batarang.js';
+import { Character } from '../src/models/entities/Character.js';
+import { Viewport } from '../src/views/Viewport.js';
+import { normalizeResultData } from '../src/models/results/resultData.js';
 
 test('dados incompletos e dimensões nulas não produzem divisões inválidas', () => {
   assert.equal(new Character({ maxHp: 0 }).hpRatio, 0);
@@ -120,7 +120,7 @@ test('um abate comum reproduz o efeito sonoro uma única vez', () => {
 test('imagem ausente não impede carregar as referências disponíveis', async () => {
   const documentoAnterior = globalThis.document;
   const imagemAnterior = globalThis.Image;
-  const { prepareReferenceSprites, drawAsset } = await import('../src/assets/sprites/referenceSprites.js?teste-falha');
+  const { prepareReferenceSprites, drawAsset } = await import('../src/views/sprites/referenceSprites.js?teste-falha');
   globalThis.Image = class {
     naturalWidth = 1;
     naturalHeight = 1;

@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Game } from '../src/core/Game.js';
+import { Game } from '../src/controllers/GameController.js';
 import { LOBBY } from '../src/config/lobby.js';
-import { normalizeResultData, formatPlayTime } from '../src/scenes/EndGameScene.js';
-import { ScreenAudioManager } from '../src/audio/ScreenAudioManager.js';
-import { ScreenNavigation } from '../src/ui/ScreenNavigation.js';
-import { escapeHTML } from '../src/ui/ScreenElements.js';
+import { normalizeResultData, formatPlayTime } from '../src/controllers/screens/EndGameController.js';
+import { ScreenAudioManager } from '../src/views/audio/ScreenAudioManager.js';
+import { ScreenNavigation } from '../src/controllers/ui/ScreenNavigation.js';
+import { escapeHTML } from '../src/views/ui/ScreenElements.js';
 
 globalThis.window = new EventTarget();
 const makeGame = () => new Game(Object.assign(new EventTarget(), {

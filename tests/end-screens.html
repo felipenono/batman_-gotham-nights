@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prévia das telas de resultado</title>
-  <link rel="stylesheet" href="../src/styles/game.css">
-  <link rel="stylesheet" href="../src/styles/lobby.css">
-  <link rel="stylesheet" href="../src/styles/end-game.css">
+  <link rel="stylesheet" href="../src/views/styles/game.css">
+  <link rel="stylesheet" href="../src/views/styles/lobby.css">
+  <link rel="stylesheet" href="../src/views/styles/end-game.css">
 </head>
 <body>
   <div class="game-wrapper"><div class="arcade-cabinet">
@@ -14,10 +14,10 @@
     <div id="scene-transition" aria-hidden="true"></div>
   </div></div>
   <script type="module">
-    import { Game } from '../src/core/Game.js';
-    import { loadSprites } from '../src/utils/SpriteAnimator.js';
+    import { Game } from '../src/controllers/GameController.js';
+    import { loadSprites } from '../src/views/sprites/SpriteRenderer.js';
     import { LOBBY } from '../src/config/lobby.js';
-    import { ScoreManager } from '../src/systems/ScoreManager.js';
+    import { ScoreManager } from '../src/models/services/ScoreManager.js';
     const query = new URLSearchParams(location.search);
     if (query.has('coop')) { LOBBY.endScreens.features.twoPlayers = true; LOBBY.endScreens.features.skinPreview = true; }
     await loadSprites();

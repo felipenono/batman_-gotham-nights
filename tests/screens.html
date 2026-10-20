@@ -1,10 +1,10 @@
-<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Revisão de telas e sprites</title><link rel="stylesheet" href="../src/styles/game.css"><link rel="stylesheet" href="../src/styles/lobby.css"><link rel="stylesheet" href="../src/styles/end-game.css"><link rel="stylesheet" href="./screens.css"><nav class="preview-toolbar"><button id="menu">Início</button><button id="over">Fim de jogo</button><button id="victory">Vitória</button><button id="death">Testar morte real</button><button id="sprites">Verificar sprites</button></nav>
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Revisão de telas e sprites</title><link rel="stylesheet" href="../src/views/styles/game.css"><link rel="stylesheet" href="../src/views/styles/lobby.css"><link rel="stylesheet" href="../src/views/styles/end-game.css"><link rel="stylesheet" href="./screens.css"><nav class="preview-toolbar"><button id="menu">Início</button><button id="over">Fim de jogo</button><button id="victory">Vitória</button><button id="death">Testar morte real</button><button id="sprites">Verificar sprites</button></nav>
 <div class="arcade-cabinet"><canvas id="game-canvas" width="1920" height="1080"></canvas><section id="screen-ui"></section></div><pre id="results">Selecione uma tela.</pre><div class="gallery"></div>
 <script type="module">
-import {loadSprites} from '../src/utils/SpriteAnimator.js';
+import {loadSprites} from '../src/views/sprites/SpriteRenderer.js';
 await loadSprites();
-import {Game} from '../src/core/Game.js';
-import {SPRITE_ART,SPRITE_ACTIONS,spriteFrame} from '../src/utils/SpriteAnimator.js';
+import {Game} from '../src/controllers/GameController.js';
+import {SPRITE_ART,SPRITE_ACTIONS,spriteFrame} from '../src/views/sprites/SpriteRenderer.js';
 const game=new Game(document.querySelector('#game-canvas')),results=document.querySelector('#results');
 function show(state){game.sceneManager.transition=null;game.restartGame();game.state=state;game.gameOverCooldown=0;game._render();game.screenUI.update();results.textContent='Tela: '+state;}
 document.querySelector('#menu').onclick=()=>show('MENU');

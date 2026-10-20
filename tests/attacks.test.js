@@ -1,14 +1,15 @@
-import {Platform} from '../src/entities/Platform.js';
+import { AnimationState } from '../src/models/AnimationState.js';
+import {Platform} from '../src/models/entities/Platform.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Batman} from '../src/entities/Batman.js';
-import {Penguin} from '../src/entities/villains/Penguin.js';
-import {PenguinBomb} from '../src/entities/projectiles/PenguinBomb.js';
-import {Batarang} from '../src/entities/projectiles/Batarang.js';
-import {CombatSystem} from '../src/systems/CombatSystem.js';
-import {Spawner} from '../src/systems/Spawner.js';
-import {SpriteAnimator,SPRITE_NAMES} from '../src/utils/SpriteAnimator.js';
-import {GAME,PROJECTILE,LEVELS} from '../src/utils/constants.js';
+import {Batman} from '../src/models/entities/Batman.js';
+import {Penguin} from '../src/models/entities/villains/Penguin.js';
+import {PenguinBomb} from '../src/models/entities/projectiles/PenguinBomb.js';
+import {Batarang} from '../src/models/entities/projectiles/Batarang.js';
+import {CombatSystem} from '../src/models/services/CombatSystem.js';
+import {Spawner} from '../src/models/services/Spawner.js';
+import {SPRITE_NAMES} from '../src/views/sprites/SpriteRenderer.js';
+import {GAME,PROJECTILE,LEVELS} from '../src/config/constants.js';
 
 test('batarang recovers exactly after 30 updates and rejected attempts are discarded',()=>{
  const p=new Batman(),shots=[],factory=(...args)=>new Batarang(...args);
@@ -68,7 +69,7 @@ test('every phase has two themed enemy types with executable attacks',()=>{
 });
 test('named sprite states transition without drawing-driven updates and death does not loop',()=>{
  assert.equal(SPRITE_NAMES.length,36);assert.ok(SPRITE_NAMES.includes('batman_walk'));
- const a=new SpriteAnimator(),actor={alive:true,onGround:true,vx:2,vy:0};
+ const a=new AnimationState(),actor={alive:true,onGround:true,vx:2,vy:0};
  a.update(actor);assert.equal(a.state,'walk');
  actor.throwAnimTimer=5;a.update(actor);assert.equal(a.state,'attack');
  actor.hurtFlash=5;a.update(actor);assert.equal(a.state,'hurt');

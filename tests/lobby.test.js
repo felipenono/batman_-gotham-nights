@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SceneManager } from '../src/core/SceneManager.js';
-import { LobbyAudioManager } from '../src/audio/LobbyAudioManager.js';
+import { SceneManager } from '../src/controllers/SceneController.js';
+import { LobbyAudioManager } from '../src/views/audio/LobbyAudioManager.js';
 import { LOBBY } from '../src/config/lobby.js';
 
 test('transição rejeita destino ausente e cliques repetidos; troca uma vez no preto', () => {

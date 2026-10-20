@@ -1,8 +1,8 @@
 // Este arquivo confere o descarte de eventos e a sincronização dos controles compartilhados.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AudioManager } from '../src/audio/AudioManager.js';
-import { ScreenAudioControls } from '../src/ui/ScreenAudioControls.js';
+import { AudioManager } from '../src/views/audio/AudioManager.js';
+import { ScreenAudioControls } from '../src/controllers/ui/ScreenAudioControls.js';
 import { LOBBY } from '../src/config/configuracao.js';
 
 test('descartar áudio remove os gestos pendentes e impede recriar o contexto', () => {

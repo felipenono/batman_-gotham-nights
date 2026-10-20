@@ -1,19 +1,22 @@
+import { LevelView } from '../src/views/world/LevelView.js';
+import { PlayerController } from '../src/controllers/input/PlayerController.js';
+const playerController = new PlayerController();
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Input } from '../src/core/Input.js';
-import { Mouse } from '../src/core/Mouse.js';
-import { Camera } from '../src/core/Camera.js';
-import { Game } from '../src/core/Game.js';
-import { Batman } from '../src/entities/Batman.js';
-import { Batarang } from '../src/entities/projectiles/Batarang.js';
-import { UmbrellaBurst } from '../src/entities/projectiles/UmbrellaBurst.js';
-import { Penguin } from '../src/entities/villains/Penguin.js';
-import { Level } from '../src/world/Level.js';
-import { Physics } from '../src/systems/Physics.js';
-import { CombatSystem } from '../src/systems/CombatSystem.js';
-import { Spawner } from '../src/systems/Spawner.js';
-import { HUD } from '../src/systems/HUD.js';
-import { GAME, KEYS, LEVELS, PROJECTILE } from '../src/utils/constants.js';
+import { Input } from '../src/controllers/input/Input.js';
+import { Mouse } from '../src/controllers/input/Mouse.js';
+import { Camera } from '../src/models/world/Camera.js';
+import { Game } from '../src/controllers/GameController.js';
+import { Batman } from '../src/models/entities/Batman.js';
+import { Batarang } from '../src/models/entities/projectiles/Batarang.js';
+import { UmbrellaBurst } from '../src/models/entities/projectiles/UmbrellaBurst.js';
+import { Penguin } from '../src/models/entities/villains/Penguin.js';
+import { Level } from '../src/models/world/Level.js';
+import { Physics } from '../src/models/services/Physics.js';
+import { CombatSystem } from '../src/models/services/CombatSystem.js';
+import { Spawner } from '../src/models/services/Spawner.js';
+import { HUD } from '../src/views/HUD.js';
+import { GAME, KEYS, LEVELS, PROJECTILE } from '../src/config/constants.js';
 
 globalThis.window = new EventTarget();
 const canvas = new EventTarget();
@@ -24,7 +27,7 @@ const factory = (...args) => new Batarang(...args);
 
 function controls() {
   const input = new Input(), mouse = new Mouse(canvas), player = new Batman(), shots = [];
-  const frame = () => {input.update(); mouse.update(100, 10); player.handleInput(input, mouse, shots, factory); player.update();};
+  const frame = () => {input.update(); mouse.update(100, 10); playerController.handleInput(player,input, mouse, shots, factory); player.update();};
   return {input, mouse, player, shots, frame, destroy() {input.destroy(); mouse.destroy();}};
 }
 
@@ -156,7 +159,7 @@ test('all phases retain landing collisions and render platforms at the same came
     for(let i=0;i<160;i++)camera.update();
     const saved=[camera.x,camera.y]; camera.update(); assert.deepEqual([camera.x,camera.y],saved);
     camera.shakeOffsetX=3;camera.shakeOffsetY=-2;
-    const ctx=context(); level.draw(ctx,camera);
+    const ctx=context(); new LevelView(level).draw(ctx,camera);
     assert.ok(ctx.calls.some(c=>c[0]==='fillRect'&&c[1]===surface.x-camera.renderX&&c[2]===surface.y-camera.renderY));
     const oldX=player.x;player.vx=4.2;
     physics.update(player,level.platforms,level.width,level.height);player.update();
@@ -166,7 +169,7 @@ test('all phases retain landing collisions and render platforms at the same came
 
 test('stationary architecture stays still while rain, fog and light timers advance', () => {
   for(const config of Object.values(LEVELS)) {
-    const level=new Level(config), bg=level.background;
+    const level=new Level(config), bg=new LevelView(level).background;
     const camera={renderX:80,renderY:0};
     const a=context(); bg.draw(a,camera);
     for(let i=0;i<30;i++)bg.update();
@@ -180,23 +183,23 @@ test('stationary architecture stays still while rain, fog and light timers advan
 });
 
 test('phase 3 halos and surface reflections only exist for enabled, lit fixtures', () => {
-  const level=new Level(LEVELS.LEVEL_3), bg=level.background;
+  const level=new Level(LEVELS.LEVEL_3), view=new LevelView(level), bg=view.background;
   bg.flickerTimer=0;
   for(const l of bg.lights)l.enabled=false;
-  const off=context();level.draw(off,{renderX:120,renderY:3});
+  const off=context();view.draw(off,{renderX:120,renderY:3});
   assert.equal(off.calls.filter(c=>c[0]==='radial').length,0);
   const light=bg.lights[0];light.enabled=true;
-  const on=context();level.draw(on,{renderX:120,renderY:3});
+  const on=context();view.draw(on,{renderX:120,renderY:3});
   const gradients=on.calls.filter(c=>c[0]==='radial'); assert.equal(gradients.length,2);
   assert.equal(gradients[0][1]+gradients[0][7],light.x-120);
   assert.equal(gradients[1][7],light.x-120);
   light.x=510;
-  const moved=context();level.draw(moved,{renderX:160,renderY:0});
+  const moved=context();view.draw(moved,{renderX:160,renderY:0});
   const reflection=moved.calls.filter(c=>c[0]==='radial')[1];
   assert.equal(reflection[7],350); assert.equal(reflection[8],163,'reflection on first platform under lamp');
   bg.flickerTimer=Math.PI/2/0.4;
   assert.equal(bg.lightIntensity(light),0);
-  const flickered=context();level.draw(flickered,{renderX:0,renderY:0});
+  const flickered=context();view.draw(flickered,{renderX:0,renderY:0});
   assert.equal(flickered.calls.filter(c=>c[0]==='radial').length,0);
 });
 

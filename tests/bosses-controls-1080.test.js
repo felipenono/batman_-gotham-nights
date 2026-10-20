@@ -1,16 +1,19 @@
+import { LevelView } from '../src/views/world/LevelView.js';
+import { PlayerController } from '../src/controllers/input/PlayerController.js';
+const playerController = new PlayerController();
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Viewport } from '../src/core/Viewport.js';
-import { Mouse } from '../src/core/Mouse.js';
-import { Input } from '../src/core/Input.js';
-import { Game } from '../src/core/Game.js';
-import { Batman } from '../src/entities/Batman.js';
-import { JokerBoss } from '../src/entities/villains/JokerBoss.js';
-import { Scarecrow } from '../src/entities/villains/Scarecrow.js';
-import { BossManager } from '../src/systems/BossManager.js';
-import { Physics } from '../src/systems/Physics.js';
-import { Level } from '../src/world/Level.js';
-import { GAME, LEVELS, LIGHTING } from '../src/utils/constants.js';
+import { Viewport } from '../src/views/Viewport.js';
+import { Mouse } from '../src/controllers/input/Mouse.js';
+import { Input } from '../src/controllers/input/Input.js';
+import { Game } from '../src/controllers/GameController.js';
+import { Batman } from '../src/models/entities/Batman.js';
+import { JokerBoss } from '../src/models/entities/villains/JokerBoss.js';
+import { Scarecrow } from '../src/models/entities/villains/Scarecrow.js';
+import { BossManager } from '../src/models/services/BossManager.js';
+import { Physics } from '../src/models/services/Physics.js';
+import { Level } from '../src/models/world/Level.js';
+import { GAME, LEVELS, LIGHTING } from '../src/config/constants.js';
 
 globalThis.window = new EventTarget();
 const key = (value, code='') => ({key:value,code,preventDefault(){}});
@@ -37,11 +40,11 @@ test('1080p uses uniform scale and mouse aim inverts the render transform at any
 
 test('movement releases immediately, including uppercase keydown and lowercase keyup',()=>{
  const input=new Input(),player=new Batman();const mouse={};
- input._onKeyDown(key('D','KeyD'));input.update();player.handleInput(input,mouse,[],()=>{});
+ input._onKeyDown(key('D','KeyD'));input.update();playerController.handleInput(player,input,mouse,[],()=>{});
  assert.equal(player.vx,player.speed);
- input._onKeyUp(key('d','KeyD'));input.update();player.handleInput(input,mouse,[],()=>{});
+ input._onKeyUp(key('d','KeyD'));input.update();playerController.handleInput(player,input,mouse,[],()=>{});
  assert.equal(player.vx,0);assert.equal(input.anyKeyDown,false);
- input._onKeyDown(key('a'));input._onKeyDown(key('d'));input.update();player.handleInput(input,mouse,[],()=>{});
+ input._onKeyDown(key('a'));input._onKeyDown(key('d'));input.update();playerController.handleInput(player,input,mouse,[],()=>{});
  assert.equal(player.vx,0);input.destroy();
 });
 
@@ -56,21 +59,21 @@ test('blur and visibility changes clear pending keys and mouse clicks',()=>{
 
 test('jump accepts a press shortly before landing and shortly after leaving a ledge, without double jump',()=>{
  const input=new Input(),p=new Batman(),mouse={};
- p.onGround=false;input._onKeyDown(key('w'));input.update();p.handleInput(input,mouse,[],()=>{});
+ p.onGround=false;input._onKeyDown(key('w'));input.update();playerController.handleInput(p,input,mouse,[],()=>{});
  assert.equal(p.vy,0);input._onKeyUp(key('w'));input.update();p.onGround=true;
- p.handleInput(input,mouse,[],()=>{});assert.equal(p.vy,p.jumpForce);
- input._onKeyDown(key('w'));input.update();p.vy=-2;p.handleInput(input,mouse,[],()=>{});
+ playerController.handleInput(p,input,mouse,[],()=>{});assert.equal(p.vy,p.jumpForce);
+ input._onKeyDown(key('w'));input.update();p.vy=-2;playerController.handleInput(p,input,mouse,[],()=>{});
  assert.equal(p.vy,-2,'a second press in flight must not jump again');
- input._onBlur();p.onGround=true;input.update();p.handleInput(input,mouse,[],()=>{});
- p.jumpBufferTimer=0;p.onGround=false;input._onKeyDown(key('w'));input.update();p.handleInput(input,mouse,[],()=>{});
+ input._onBlur();p.onGround=true;input.update();playerController.handleInput(p,input,mouse,[],()=>{});
+ p.jumpBufferTimer=0;p.onGround=false;input._onKeyDown(key('w'));input.update();playerController.handleInput(p,input,mouse,[],()=>{});
  assert.equal(p.vy,p.jumpForce);input.destroy();
 });
 
 test('losing focus also discards a buffered jump before landing',()=>{
  const input=new Input(),p=new Batman();p.onGround=false;
- input._onKeyDown(key('w'));input.update();p.handleInput(input,{},[],()=>{});
+ input._onKeyDown(key('w'));input.update();playerController.handleInput(p,input,{},[],()=>{});
  assert.ok(p.jumpBufferTimer>0);
- input._onBlur();input.update();p.onGround=true;p.handleInput(input,{},[],()=>{});
+ input._onBlur();input.update();p.onGround=true;playerController.handleInput(p,input,{},[],()=>{});
  assert.equal(p.vy,0);assert.equal(p.jumpBufferTimer,0);input.destroy();
 });
 
@@ -117,7 +120,7 @@ test('real game completes all boss queues and three phase transitions at 1080p',
 });
 
 test('soft illumination preserves lit fixtures and extinction',()=>{
- const level=new Level(LEVELS.LEVEL_3),bg=level.background,light=bg.lights[0];
+ const level=new Level(LEVELS.LEVEL_3),bg=new LevelView(level).background,light=bg.lights[0];
  assert.ok(LIGHTING.INTENSITY<0.5&&bg.lightIntensity(light)<0.4);
  light.enabled=false;assert.equal(bg.lightIntensity(light),0);
 });
