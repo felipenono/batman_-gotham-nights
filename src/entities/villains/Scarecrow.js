@@ -19,6 +19,8 @@ export class Scarecrow extends Character {
     this.scoreType = "Scarecrow";
     this.name = "Espantalho";
     this.isBoss = true;
+    // Fala tocada quando ele entra na arena (ver AUDIO_CONFIG.VOZES).
+    this.introVoice = "scarecrow_intro";
     this.smokeCooldown = 110;
     this.bombCooldown = 190;
     this.auraTimer = 1200;

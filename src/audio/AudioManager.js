@@ -1,6 +1,6 @@
 // Este arquivo cuida de coordenar o contexto de áudio, os volumes e o sequenciador.
 // ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
-import { AUDIO_CONFIG } from "../config/configuracao.js";
+import { AUDIO_CONFIG, assetURL } from "../config/configuracao.js";
 import { LOBBY } from "../config/configuracao.js";
 import { MusicComposer } from "./MusicComposer.js";
 import { SoundEffects } from "./SoundEffects.js";
@@ -24,6 +24,8 @@ export class AudioManager {
     this.tempo = AUDIO_CONFIG.TEMPOS.ROOFTOPS;
     this.musicTimer = null;
     this.nextNoteTime = 0;
+    // Guarda as falas já carregadas para não baixar o arquivo de novo.
+    this.vozes = new Map();
     this._initContext = this._initContext.bind(this);
     this._scheduler = this._scheduler.bind(this);
     window.addEventListener("keydown", this._initContext, { once: true });
@@ -47,6 +49,7 @@ export class AudioManager {
       this.sfxGain.connect(this.masterGain);
       this.nextNoteTime = this.ctx.currentTime + 0.1;
       this._startScheduler();
+      this._preloadVozes();
     } else if (this.ctx.state === "suspended") {
       this.ctx.resume();
     }
@@ -78,6 +81,49 @@ export class AudioManager {
   playSfx(tipo) {
     if (!this.ctx || this.isMuted) return;
     SoundEffects.play(tipo, this.ctx, this.sfxGain);
+  }
+  // ===== FALAS GRAVADAS (MP3) =====
+  // Baixa e decodifica todas as falas assim que o áudio é liberado.
+  _preloadVozes() {
+    for (const nome of Object.keys(AUDIO_CONFIG.VOZES || {})) this._carregarVoz(nome);
+  }
+  _carregarVoz(nome) {
+    const config = AUDIO_CONFIG.VOZES?.[nome];
+    if (!config || !this.ctx) return null;
+    if (!this.vozes.has(nome)) {
+      const contexto = this.ctx;
+      const promessa = fetch(assetURL(config.arquivo))
+        .then((resposta) => {
+          if (!resposta.ok) throw new Error(`Fala não encontrada: ${config.arquivo}`);
+          return resposta.arrayBuffer();
+        })
+        .then((dados) => contexto.decodeAudioData(dados))
+        .catch((erro) => {
+          // Sem o arquivo, o jogo continua normalmente, só sem a fala.
+          console.warn(erro.message || erro);
+          return null;
+        });
+      this.vozes.set(nome, promessa);
+    }
+    return this.vozes.get(nome);
+  }
+  // Toca uma fala gravada pelo canal de efeitos (respeita mudo e volume).
+  playVoice(nome) {
+    if (!nome || !this.ctx || this.isMuted) return;
+    const config = AUDIO_CONFIG.VOZES?.[nome];
+    const carregando = this._carregarVoz(nome);
+    if (!config || !carregando) return;
+    const contexto = this.ctx;
+    carregando.then((buffer) => {
+      if (!buffer || this.ctx !== contexto || this.isMuted) return;
+      const fonte = contexto.createBufferSource();
+      fonte.buffer = buffer;
+      const ganho = contexto.createGain();
+      ganho.gain.value = config.volume ?? 1;
+      fonte.connect(ganho);
+      ganho.connect(this.sfxGain);
+      fonte.start();
+    });
   }
   _startScheduler() {
     if (this.musicTimer) clearInterval(this.musicTimer);

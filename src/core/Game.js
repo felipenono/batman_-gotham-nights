@@ -231,6 +231,7 @@ export class Game {
       this.soundManager.setTrack("boss");
       this.camera.shake(12, 20);
       this.playSound("boss_enter");
+      this.tocarFalaDoChefe(this.bossManager.boss);
     }
   }
   atualizarChefe(passoTempo) {
@@ -259,12 +260,17 @@ export class Game {
       } else {
         this.state = GameState.LEVEL_TRANSITION;
       }
-    }, () => {
+    }, (novoChefe) => {
       this.projectiles = [];
       this.enemies = [];
       this.camera.shake(8, 12);
       this.playSound("boss_enter");
+      this.tocarFalaDoChefe(novoChefe);
     });
+  }
+  // Se o chefão tiver uma fala de entrada (ex.: Espantalho), toca o MP3 dela.
+  tocarFalaDoChefe(chefe) {
+    if (chefe?.introVoice) this.soundManager.playVoice(chefe.introVoice);
   }
   atualizarInimigos(passoTempo) {
     for (let indiceItem = this.enemies.length - 1; indiceItem >= 0; indiceItem--) {

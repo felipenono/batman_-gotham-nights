@@ -509,6 +509,14 @@ export const AUDIO_CONFIG = {
     BGM: 0.35,
     SFX: 0.55
   },
+  // Falas gravadas dos personagens (arquivos MP3 em public/assets/audio/).
+  // volume: 0 a 1, multiplicado pelo volume de efeitos (SFX).
+  VOZES: {
+    scarecrow_intro: {
+      arquivo: "assets/audio/scarecrow_intro.mp3",
+      volume: 1
+    }
+  },
   // Andamento das músicas em batidas por minuto.
   TEMPOS: {
     ROOFTOPS: 116,

@@ -4,6 +4,8 @@
 
 O jogo usa sprites em PNG, animações montadas em Canvas e cenários desenhados em código. A interface está em português e a renderização é feita em **1920 × 1080**, com escala proporcional.
 
+O [guia da refatoração](REFATORACAO.md) reúne o mapa dos arquivos, as correções realizadas, onde alterar o título e os valores do jogo, e uma lista de teste manual.
+
 ## Como instalar e jogar
 
 ### Requisitos
