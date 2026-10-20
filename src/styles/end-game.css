@@ -484,3 +484,26 @@
   font-size: 12px;
   color: var(--score-muted);
 }
+
+/* Espacamento e alinhamento das telas de resultado. */
+:is(.end-defeat, .end-victory) .result-actions .lobby-button {
+  justify-content: center;
+  text-align: center;
+}
+:is(.end-defeat, .end-victory) .result-actions .menu-label {
+  flex: 0 1 auto;
+  text-align: center;
+  line-height: 1.5;
+}
+:is(.end-defeat, .end-victory) .result-content .lobby-crest {
+  margin-bottom: 24px;
+}
+:is(.end-defeat, .end-victory) .result-title {
+  line-height: 1.15;
+}
+:is(.end-defeat, .end-victory) .result-content .result-divider {
+  margin: 24px 0;
+}
+:is(.end-defeat, .end-victory) .result-bottom {
+  justify-content: flex-end;
+}
