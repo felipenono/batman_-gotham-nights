@@ -172,6 +172,8 @@ body {
   flex-direction: column;
   gap: 10px;
   width: min(330px,100%);
+  margin-top: 32px;
+  flex-shrink: 0;
 }
 .lobby-button {
   width: 100%;
@@ -497,4 +499,8 @@ body {
 .bat-logo {
   filter: contrast(12) url(#bat-cutout);
   mix-blend-mode: normal;
+}
+
+.lobby-menu [data-menu-id="start"] .menu-label {
+  text-align: center;
 }
