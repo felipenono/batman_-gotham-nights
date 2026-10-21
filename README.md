@@ -1,4 +1,4 @@
-# Batman: Noites dos Vilões
+# Batman: Gotham Knights
 
 Jogo de ação e plataformas em JavaScript, Canvas 2D e Vite, organizado em **MVC com orientação a objetos**. São três fases, inimigos temáticos, chefões, pontuação e interface em português. Renderização em 1920 × 1080 com escala proporcional.
 
