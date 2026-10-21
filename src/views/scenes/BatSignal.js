@@ -139,24 +139,31 @@ export class BatSignal {
     canvas.height = altura;
     return canvas;
   }
-  /** Lua plana com crateras, halo e feixe são preparados uma vez, em baixa resolução. */
+  /** Lua com crateras, halo, borda luminosa, feixe e névoa do feixe: preparados uma vez, em baixa resolução. */
   prepareTextures() {
     if (this.textures) return;
     const parametrosLocais = this.config, size = parametrosLocais.textureSize;
     const moon = this.createCanvas(size, size);
     const halo = this.createCanvas(size, size);
+    const rim = this.createCanvas(size, size);
     const beam = this.createCanvas(size, size * 2);
-    if (!moon || !halo || !beam) return;
-    const contextoLua = moon.getContext("2d"), center = size / 2;
-    contextoLua.fillStyle = parametrosLocais.colors.moon;
+    const mist = this.createCanvas(size, size / 2);
+    if (!moon || !halo || !rim || !beam || !mist) return;
+    const center = size / 2, cores = parametrosLocais.colors;
+    // Lua: disco plano, um pouco mais escuro na borda (sem volume 3D), com crateras discretas.
+    const contextoLua = moon.getContext("2d");
+    const superficie = contextoLua.createRadialGradient(center, center, 0, center, center, center);
+    superficie.addColorStop(0, cores.moon);
+    superficie.addColorStop(0.8, cores.moon);
+    superficie.addColorStop(1, cores.moonEdge);
+    contextoLua.fillStyle = superficie;
     contextoLua.beginPath();
     contextoLua.arc(center, center, center - 1, 0, Math.PI * 2);
     contextoLua.fill();
     contextoLua.save();
     contextoLua.clip();
-    contextoLua.fillStyle = parametrosLocais.colors.crater;
+    contextoLua.fillStyle = cores.crater;
     contextoLua.globalAlpha = parametrosLocais.moon.craterOpacity;
-    // Manchas discretas, sem modelar uma esfera ou aplicar iluminação volumétrica.
     for (let indiceItem = 0; indiceItem < 17; indiceItem++) {
       const posicaoX = (indiceItem * 71 + 31) % 251 / 251 * size;
       const posicaoY = (indiceItem * 113 + 59) % 251 / 251 * size;
@@ -165,35 +172,53 @@ export class BatSignal {
       contextoLua.fill();
     }
     contextoLua.restore();
+    // Halo: queda suave e longa da luz branco-amarelada (o centro fica escondido atrás da lua).
     const contextoHalo = halo.getContext("2d");
     const glow = contextoHalo.createRadialGradient(center, center, 0, center, center, center);
-    glow.addColorStop(0, rgba(parametrosLocais.colors.halo, 0.7));
-    glow.addColorStop(0.3, rgba(parametrosLocais.colors.halo, 0.3));
-    glow.addColorStop(0.65, rgba(parametrosLocais.colors.halo, 0.08));
-    glow.addColorStop(1, rgba(parametrosLocais.colors.halo, 0));
+    [[0, 0.5], [0.2, 0.36], [0.38, 0.17], [0.55, 0.07], [0.75, 0.02], [1, 0]].forEach(([parada, alfa]) => glow.addColorStop(parada, rgba(cores.halo, alfa)));
     contextoHalo.fillStyle = glow;
     contextoHalo.fillRect(0, 0, size, size);
+    // Borda luminosa: um anel estreito logo fora do disco, que separa a superfície da lua do halo.
+    const contextoBorda = rim.getContext("2d");
+    // A textura cobre 1,6 raio: o anel começa dentro do disco (0,9 raio), é mais forte
+    // exatamente na borda (1 raio) e some até 1,6 raio. Assim não sobra faixa escura em volta.
+    const anel = contextoBorda.createRadialGradient(center, center, center * 0.9 / 1.6, center, center, center);
+    anel.addColorStop(0, rgba(cores.halo, 0));
+    anel.addColorStop(0.14, rgba(cores.halo, 0.6));
+    anel.addColorStop(0.4, rgba(cores.halo, 0.18));
+    anel.addColorStop(1, rgba(cores.halo, 0));
+    contextoBorda.fillStyle = anel;
+    contextoBorda.fillRect(0, 0, size, size);
+    // Feixe: o alfa acompanha as laterais inclinadas do cone e some devagar nas bordas.
     const contextoFeixe = beam.getContext("2d"), imagem = contextoFeixe.createImageData(beam.width, beam.height);
-    const cor = Number.parseInt(parametrosLocais.colors.beam.slice(1), 16);
-    // Alfa acompanha as laterais inclinadas do cone: sem bordas duras ou blur caro.
+    const cor = Number.parseInt(cores.beam.slice(1), 16);
     for (let posicaoY = 0; posicaoY < beam.height; posicaoY++) {
       const progress = 1 - posicaoY / (beam.height - 1);
       const half = (0.018 + progress * 0.982) * beam.width / 2;
+      // Perto do refletor a luz é mais concentrada; perto da lua, mais espalhada (mas ainda chega lá).
+      const longitudinal = 0.78 + (1 - progress) * 0.22;
       for (let posicaoX = 0; posicaoX < beam.width; posicaoX++) {
         const indice = (posicaoY * beam.width + posicaoX) * 4;
+        // Miolo uniforme; só a parte externa (beamEdgeSoftness da meia-largura) esmaece.
         const edge = clamp(1 - Math.abs(posicaoX - beam.width / 2) / half);
+        const borda = smoothstep(edge / Math.max(0.01, parametrosLocais.beamEdgeSoftness));
         imagem.data[indice] = cor >> 16;
         imagem.data[indice + 1] = cor >> 8 & 255;
         imagem.data[indice + 2] = cor & 255;
-        imagem.data[indice + 3] = Math.round(255 * Math.pow(edge, parametrosLocais.beamEdgeSoftness) * (0.45 + progress * 0.55));
+        imagem.data[indice + 3] = Math.round(255 * borda * longitudinal);
       }
     }
     contextoFeixe.putImageData(imagem, 0, 0);
-    this.textures = {
-      moon,
-      halo,
-      beam
-    };
+    // Névoa do feixe: mancha alongada e muito fraca, na cor do próprio feixe (nunca cinza).
+    const contextoNevoa = mist.getContext("2d");
+    contextoNevoa.translate(size / 2, size / 4);
+    contextoNevoa.scale(1, 0.5);
+    const nevoa = contextoNevoa.createRadialGradient(0, 0, 0, 0, 0, size / 2);
+    nevoa.addColorStop(0, rgba(cores.beam, 0.5));
+    nevoa.addColorStop(1, rgba(cores.beam, 0));
+    contextoNevoa.fillStyle = nevoa;
+    contextoNevoa.fillRect(-size / 2, -size / 2, size, size);
+    this.textures = { moon, halo, rim, beam, mist };
   }
   intensity(tempo, reduced = false) {
     const parametrosLocais = this.config;
@@ -205,22 +230,45 @@ export class BatSignal {
       light: clamp(parametrosLocais.intensity * fade * (1 + parametrosLocais.flickerAmount * wave))
     };
   }
-  drawSky(contexto, largura, altura, tempo, origem, reduced = false, screenAspect = null) {
+  /**
+   * Bat-Sinal no céu do lobby e das telas finais. Uma única lua (centro e raio) define
+   * halo, disco, símbolo e o fim do feixe; a origem do feixe é a lente do refletor.
+   * Devolve a lua usada, para o refletor apontar para o mesmo lugar.
+   */
+  drawSky(contexto, largura, altura, tempo, origem, reduced = false, screenAspect = null, moon = moonLayout(largura, altura, this.config, screenAspect), lente = undefined) {
     this.prepareTextures();
-    const textures = this.textures;
-    if (!textures) return;
-    const parametrosLocais = this.config, moon = moonLayout(largura, altura, parametrosLocais, screenAspect);
+    if (!this.textures) return moon;
     const { fade, light } = this.intensity(tempo, reduced);
-    const radius = moon.radius;
+    this.drawHalo(contexto, moon, light);
+    this.drawBeam(contexto, moon, origem, tempo, light, reduced, undefined, lente);
+    this.drawMoon(contexto, moon, fade, light);
+    return moon;
+  }
+  // Halo atrás da lua, em composição aditiva.
+  drawHalo(contexto, moon, light) {
+    this.prepareTextures();
+    if (!this.textures) return;
+    const raioHalo = moon.radius * this.config.haloRadius;
     contexto.save();
     contexto.imageSmoothingEnabled = true;
-    contexto.drawImage(textures.moon, moon.x - radius, moon.y - radius, radius * 2, radius * 2);
     contexto.globalCompositeOperation = "lighter";
-    contexto.globalAlpha = light * parametrosLocais.glowIntensity;
-    const haloRadius = radius * parametrosLocais.haloRadius;
-    contexto.drawImage(textures.halo, moon.x - haloRadius, moon.y - haloRadius, haloRadius * 2, haloRadius * 2);
-    this.drawBeam(contexto, moon, origem, tempo, light, reduced);
-    // A silhueta é preta sólida; o flicker afeta a luz, nunca clareia o símbolo.
+    contexto.globalAlpha = clamp(light * this.config.glowIntensity);
+    contexto.drawImage(this.textures.halo, moon.x - raioHalo, moon.y - raioHalo, raioHalo * 2, raioHalo * 2);
+    contexto.restore();
+  }
+  // Disco com textura, borda luminosa fina e a silhueta preta da logo no centro.
+  drawMoon(contexto, moon, fade, light) {
+    this.prepareTextures();
+    if (!this.textures) return;
+    const parametrosLocais = this.config, radius = moon.radius;
+    contexto.save();
+    contexto.imageSmoothingEnabled = true;
+    contexto.drawImage(this.textures.moon, moon.x - radius, moon.y - radius, radius * 2, radius * 2);
+    contexto.globalCompositeOperation = "lighter";
+    contexto.globalAlpha = clamp(light * parametrosLocais.rimGlow);
+    const raioBorda = radius * 1.6;
+    contexto.drawImage(this.textures.rim, moon.x - raioBorda, moon.y - raioBorda, raioBorda * 2, raioBorda * 2);
+    // A silhueta é preta sólida; a oscilação afeta a luz, nunca clareia o símbolo.
     contexto.globalCompositeOperation = "source-over";
     contexto.globalAlpha = fade;
     const mask = this.mask;
@@ -236,17 +284,37 @@ export class BatSignal {
     }
     contexto.restore();
   }
-  drawBeam(contexto, moon, origem, tempo, light, reduced) {
-    const parametrosLocais = this.config;
+  // Ponto exato da lente: a frente do refletor, já girado na direção do centro da lua.
+  lensPoint(origem, moon, escala = moon.radius / this.config.moon.radius) {
     const dx = moon.x - origem.x, dy = moon.y - origem.y;
+    const distancia = Math.hypot(dx, dy) || 1;
+    const avanco = this.config.lensOffset * escala;
+    return { x: origem.x + dx / distancia * avanco, y: origem.y + dy / distancia * avanco };
+  }
+  /**
+   * Feixe da lente até o CENTRO da lua; no fim, a largura é a do círculo iluminado.
+   * Não é desenhado sobre o disco (recorte), para não lavar a textura da lua.
+   */
+  drawBeam(contexto, moon, origem, tempo, light, reduced, escala = moon.radius / this.config.moon.radius, lente = this.lensPoint(origem, moon, escala)) {
+    this.prepareTextures();
+    if (!this.textures) return;
+    const parametrosLocais = this.config;
+    const dx = moon.x - lente.x, dy = moon.y - lente.y;
     const length = Math.hypot(dx, dy), largura = moon.radius * parametrosLocais.beamWidth;
-    const escala = moon.radius / parametrosLocais.moon.radius;
     if (length < 1) return;
     contexto.save();
-    contexto.translate(origem.x, origem.y);
+    contexto.imageSmoothingEnabled = true;
+    // Recorte: tudo menos o disco da lua.
+    contexto.beginPath();
+    contexto.rect(lente.x - length * 4, lente.y - length * 4, length * 8, length * 8);
+    contexto.arc(moon.x, moon.y, moon.radius * 0.97, 0, Math.PI * 2);
+    contexto.clip("evenodd");
+    contexto.translate(lente.x, lente.y);
     contexto.rotate(Math.atan2(dx, -dy));
-    contexto.globalAlpha = light * parametrosLocais.beamOpacity;
+    contexto.globalCompositeOperation = "lighter";
+    contexto.globalAlpha = clamp(light * parametrosLocais.beamOpacity);
     contexto.drawImage(this.textures.beam, -largura / 2, -length, largura, length);
+    // Névoa e poeira só dentro do cone.
     contexto.beginPath();
     contexto.moveTo(-parametrosLocais.sourceWidth * escala / 2, 0);
     contexto.lineTo(-largura / 2, -length);
@@ -255,17 +323,17 @@ export class BatSignal {
     contexto.closePath();
     contexto.clip();
     const segundos = reduced ? 0 : tempo / 1000;
-    for (let indiceItem = 0; indiceItem < 3; indiceItem++) {
-      const progress = ((indiceItem + 0.35) / 3 + segundos * parametrosLocais.mistSpeed) % 1;
-      const posicaoX = Math.sin(indiceItem * 2.1 + segundos * 0.12) * largura * progress * 0.24;
-      contexto.globalAlpha = light * parametrosLocais.mistOpacity * Math.sin(progress * Math.PI);
-      contexto.drawImage(this.textures.halo, posicaoX - largura * 0.6, -length * progress - 34 * escala, largura * 1.2, 68 * escala);
+    for (let indiceItem = 0; indiceItem < parametrosLocais.mistCount; indiceItem++) {
+      const progress = ((indiceItem + 0.5) / parametrosLocais.mistCount + segundos * parametrosLocais.mistSpeed) % 1;
+      const larguraNevoa = largura * (0.35 + progress * 0.7);
+      contexto.globalAlpha = clamp(light * parametrosLocais.mistOpacity * Math.sin(progress * Math.PI));
+      contexto.drawImage(this.textures.mist, -larguraNevoa / 2, -length * progress - larguraNevoa * 0.18, larguraNevoa, larguraNevoa * 0.36);
     }
     contexto.fillStyle = parametrosLocais.colors.dust;
     for (let indiceItem = 0; indiceItem < parametrosLocais.dustCount; indiceItem++) {
       const progress = (indiceItem * 0.618034 + segundos * parametrosLocais.dustSpeed) % 1;
       const posicaoX = Math.sin(indiceItem * 2.4 + segundos * 0.1) * largura * progress * 0.36;
-      contexto.globalAlpha = light * parametrosLocais.dustOpacity * Math.sin(progress * Math.PI);
+      contexto.globalAlpha = clamp(light * parametrosLocais.dustOpacity * Math.sin(progress * Math.PI));
       contexto.beginPath();
       contexto.arc(posicaoX, -length * progress, (0.8 + indiceItem % 3 * 0.35) * escala, 0, Math.PI * 2);
       contexto.fill();
@@ -294,16 +362,18 @@ export class BatSignal {
     contexto.stroke();
     contexto.restore();
   }
-  drawReflector(contexto, origem, moon, tempo, reduced) {
+  // Refletor girado para o centro da mesma lua do feixe; a faixa clara é a lente (origem do feixe).
+  drawReflector(contexto, origem, moon, tempo, reduced, escala = 1) {
     const parametrosLocais = this.config;
     contexto.save();
+    contexto.translate(origem.x, origem.y);
+    contexto.scale(escala, escala);
     contexto.strokeStyle = parametrosLocais.colors.fixtureEdge;
     contexto.lineWidth = 3;
     contexto.beginPath();
-    contexto.moveTo(origem.x, origem.y + 3);
-    contexto.lineTo(origem.x, origem.y + 14);
+    contexto.moveTo(0, 3);
+    contexto.lineTo(0, 14);
     contexto.stroke();
-    contexto.translate(origem.x, origem.y);
     contexto.rotate(Math.atan2(moon.x - origem.x, origem.y - moon.y));
     contexto.fillStyle = parametrosLocais.colors.fixture;
     contexto.fillRect(-9, -4, 18, 9);
@@ -313,7 +383,7 @@ export class BatSignal {
     contexto.globalCompositeOperation = "lighter";
     contexto.globalAlpha = this.intensity(tempo, reduced).light;
     contexto.fillStyle = parametrosLocais.colors.beam;
-    contexto.fillRect(-parametrosLocais.sourceWidth / 2, -5, parametrosLocais.sourceWidth, 2);
+    contexto.fillRect(-parametrosLocais.sourceWidth / 2, -parametrosLocais.lensOffset, parametrosLocais.sourceWidth, 2);
     contexto.restore();
   }
 }

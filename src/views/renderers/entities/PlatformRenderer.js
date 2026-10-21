@@ -1,5 +1,5 @@
 // Este arquivo cuida de desenhar cada tema de plataforma.
-import { APARENCIA } from "../../../config/configuracao.js";
+import { APARENCIA, CENARIOS } from "../../../config/configuracao.js";
 
 // ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
 const estiloVisual = APARENCIA.Platform;
@@ -21,56 +21,78 @@ export function drawPlatform(contexto) {
 
 }
 
-export function desenharTelhado(contexto) {
-    const grad = contexto.createLinearGradient(this.x, this.y, this.x, this.y + this.h);
-    grad.addColorStop(0, estiloVisual.gradiente1);
-    grad.addColorStop(0.15, estiloVisual.gradiente2);
-    grad.addColorStop(1, estiloVisual.gradiente3);
-    contexto.fillStyle = grad;
+// ===== PLATAFORMAS DOS TELHADOS (Fase 1) =====
+// Todas as superfícies jogáveis da fase têm o MESMO acabamento: material, borda clara de pisar
+// no topo, contorno e sombra. Só o detalhe interno muda (juntas, grelha ou conduítes).
+// Posição, tamanho e colisão continuam vindo da plataforma (this), sem nenhuma alteração.
+function acabamentoDeTelhado(contexto) {
+    const cores = CENARIOS.fase1.plataformas;
+    const material = contexto.createLinearGradient(this.x, this.y, this.x, this.y + this.h);
+    material.addColorStop(0, cores.materialTopo);
+    material.addColorStop(0.25, cores.materialMeio);
+    material.addColorStop(1, cores.materialBase);
+    contexto.fillStyle = material;
     contexto.fillRect(this.x, this.y, this.w, this.h);
-    contexto.fillStyle = estiloVisual.preenchimento4;
-    contexto.fillRect(this.x, this.y, this.w, 3);
-    contexto.strokeStyle = estiloVisual.gradiente3;
+    // Sombra fina logo abaixo: descola a plataforma do fundo.
+    contexto.fillStyle = cores.sombra;
+    contexto.fillRect(this.x + 2, this.y + this.h, this.w - 2, 3);
+    // Contorno escuro igual para todas.
+    contexto.strokeStyle = cores.contorno;
     contexto.lineWidth = 1;
-    const passo = 40;
-    for (let px = this.x; px < this.x + this.w; px += passo) {
-      contexto.beginPath();
-      contexto.moveTo(px, this.y + 4);
-      contexto.lineTo(px, this.y + this.h);
-      contexto.stroke();
-    }
+    contexto.strokeRect(this.x + 0.5, this.y + 0.5, this.w - 1, this.h - 1);
+}
 
+// Borda de pisar: a faixa clara do topo, por último, para ficar sempre visível.
+function bordaDePisar(contexto) {
+    const cores = CENARIOS.fase1.plataformas;
+    contexto.fillStyle = cores.borda;
+    contexto.fillRect(this.x, this.y, this.w, 3);
+    contexto.fillStyle = cores.brilho;
+    contexto.fillRect(this.x, this.y, this.w, 1);
+}
+
+export function desenharTelhado(contexto) {
+    acabamentoDeTelhado.call(this, contexto);
+    // Juntas das placas do telhado.
+    contexto.strokeStyle = CENARIOS.fase1.plataformas.junta;
+    contexto.lineWidth = 1;
+    contexto.beginPath();
+    for (let px = this.x + 40; px < this.x + this.w; px += 40) {
+      contexto.moveTo(px + 0.5, this.y + 4);
+      contexto.lineTo(px + 0.5, this.y + this.h - 1);
+    }
+    contexto.stroke();
+    bordaDePisar.call(this, contexto);
 }
 
 export function desenharVentilacao(contexto) {
-    contexto.fillStyle = estiloVisual.preenchimento6;
-    contexto.fillRect(this.x, this.y, this.w, this.h);
-    contexto.fillStyle = estiloVisual.gradiente1;
-    contexto.fillRect(this.x + 3, this.y + 3, this.w - 6, this.h - 6);
-    contexto.fillStyle = estiloVisual.gradiente2;
-    for (let velocidadeY = this.y + 6; velocidadeY < this.y + this.h - 6; velocidadeY += 5) {
-      contexto.fillRect(this.x + 6, velocidadeY, this.w - 12, 2);
+    const cores = CENARIOS.fase1.plataformas;
+    acabamentoDeTelhado.call(this, contexto);
+    // Grelha de ventilação embutida (detalhe decorativo, dentro da mesma superfície).
+    contexto.fillStyle = cores.painel;
+    contexto.fillRect(this.x + 5, this.y + 6, this.w - 10, this.h - 9);
+    contexto.fillStyle = cores.junta;
+    for (let py = this.y + 8; py < this.y + this.h - 4; py += 4) {
+      contexto.fillRect(this.x + 7, py, this.w - 14, 2);
     }
-    contexto.fillStyle = estiloVisual.preenchimento9;
-    contexto.fillRect(this.x, this.y, this.w, 2);
-
+    bordaDePisar.call(this, contexto);
 }
 
 export function desenharCano(contexto) {
-    const pipeGrad = contexto.createLinearGradient(this.x, this.y, this.x, this.y + this.h);
-    pipeGrad.addColorStop(0, estiloVisual.preenchimento9);
-    pipeGrad.addColorStop(0.3, estiloVisual.gradiente11);
-    pipeGrad.addColorStop(0.7, estiloVisual.preenchimento4);
-    pipeGrad.addColorStop(1, estiloVisual.gradiente1);
-    contexto.fillStyle = pipeGrad;
-    contexto.beginPath();
-    contexto.roundRect(this.x, this.y, this.w, this.h, 4);
-    contexto.fill();
-    contexto.fillStyle = estiloVisual.gradiente2;
-    for (let px = this.x + 15; px < this.x + this.w; px += 35) {
-      contexto.fillRect(px, this.y, 4, this.h);
+    const cores = CENARIOS.fase1.plataformas;
+    acabamentoDeTelhado.call(this, contexto);
+    // Conduítes presos na lateral da laje (detalhe metálico fosco, não um cano solto).
+    for (const py of [this.y + 9, this.y + this.h - 6]) {
+      contexto.fillStyle = cores.detalhe;
+      contexto.fillRect(this.x + 4, py - 2, this.w - 8, 4);
+      contexto.fillStyle = cores.detalheClaro;
+      contexto.fillRect(this.x + 4, py - 2, this.w - 8, 1);
     }
-
+    contexto.fillStyle = cores.contorno;
+    for (let px = this.x + 18; px < this.x + this.w - 8; px += 35) {
+      contexto.fillRect(px, this.y + 5, 3, this.h - 7);
+    }
+    bordaDePisar.call(this, contexto);
 }
 
 export function desenharCassino(contexto) {

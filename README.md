@@ -35,7 +35,7 @@ Abra **http://localhost:3000** ou a porta indicada pelo Vite. Mantenha o termina
 | Fase | Cenário | Chefes |
 | --- | --- | --- |
 | 1 | Telhados de Gotham | Coringa → Espantalho |
-| 2 | Salão Iceberg | Arlequina |
+| 2 | Iceberg Lounge | Arlequina |
 | 3 | Asilo Arkham | Duas-Caras |
 
 Os Pinguins das fases 2 e 3 lançam explosivos com perseguição limitada. Cada dano recebido sorteia uma das sete reações de áudio. Skins, dois jogadores e o botão de próxima fase ainda não estão disponíveis; seus atalhos ficam ocultos nas telas.

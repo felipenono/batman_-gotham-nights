@@ -83,18 +83,32 @@ export class GothamBackdrop {
       x: roof.x + roof.width / 2 + offsets[2],
       y: 895 + 2 * 95 - roof.height - 26
     };
+    // Uma única lua por quadro: o céu (em pixels) e o refletor (na escala base 1920 × 1080)
+    // usam a mesma posição, só convertida de unidade. A lente também sai desse cálculo.
+    const escalaX = largura / LOBBY.base.width, escalaY = altura / LOBBY.base.height;
+    const lua = moonLayout(largura, altura, this.batSignal.config, screenAspect);
+    const luaBase = { x: lua.x / escalaX, y: lua.y / escalaY, radius: lua.radius / Math.min(escalaX, escalaY) };
+    const lenteBase = this.batSignal.lensPoint(origem, luaBase, 1);
+    const luz = {
+      lua,
+      luaBase,
+      origem: { x: origem.x * escalaX, y: origem.y * escalaY },
+      lente: { x: lenteBase.x * escalaX, y: lenteBase.y * escalaY }
+    };
     this.layers.forEach((buildings, layer) => {
       const deslocamento = offsets[layer];
-      this.desenharLuz(contexto, largura, altura, tempo, origem, reduced, screenAspect, layer);
+      this.desenharLuz(contexto, largura, altura, tempo, luz, reduced, screenAspect, layer);
       contexto.save();
       contexto.translate(deslocamento, 0);
       this.desenharPredios(contexto, buildings, layer, origem, deslocamento, tempo, reduced);
       contexto.restore();
       this.desenharNevoa(contexto, layer, tempo, reduced);
     });
-    this.batSignal.drawReflector(contexto, origem, moonLayout(LOBBY.base.width, LOBBY.base.height, this.batSignal.config, screenAspect), tempo, reduced);
+    this.batSignal.drawReflector(contexto, origem, luaBase, tempo, reduced);
     this.desenharChuva(contexto, tempo, reduced);
     this.desenharVinheta(contexto);
+    // Halo, lua e símbolo são a própria fonte de luz: ficam por cima da vinheta (que escurece o resto).
+    this.desenharLua(contexto, largura, altura, tempo, luz, reduced);
     contexto.restore();
   }
   desenharCeu(contexto) {
@@ -115,19 +129,25 @@ export class GothamBackdrop {
       this.screenAspect = screenAspect;
     }
   }
-  desenharLuz(contexto, largura, altura, tempo, origem, reduced, screenAspect, layer) {
+  desenharLuz(contexto, largura, altura, tempo, luz, reduced, screenAspect, layer) {
     if (layer === 2) {
       // Luz à frente da cidade distante e atrás da camada do refletor.
-      // Só a origem acompanha o parallax; lua e símbolo compartilham o centro.
+      // Só a origem acompanha o parallax; lua, halo, símbolo e fim do feixe compartilham o centro.
       // Desfaz a escala desigual do cenário para conservar o círculo da lua.
+      // Aqui entra só o feixe; halo e lua vêm depois da vinheta (desenharLua).
       contexto.save();
       contexto.scale(LOBBY.base.width / largura, LOBBY.base.height / altura);
-      this.batSignal.drawSky(contexto, largura, altura, tempo, {
-        x: origem.x * largura / LOBBY.base.width,
-        y: origem.y * altura / LOBBY.base.height
-      }, reduced, screenAspect);
+      this.batSignal.drawBeam(contexto, luz.lua, luz.origem, tempo, this.batSignal.intensity(tempo, reduced).light, reduced, undefined, luz.lente);
       contexto.restore();
     }
+  }
+  desenharLua(contexto, largura, altura, tempo, luz, reduced) {
+    const { fade, light } = this.batSignal.intensity(tempo, reduced);
+    contexto.save();
+    contexto.scale(LOBBY.base.width / largura, LOBBY.base.height / altura);
+    this.batSignal.drawHalo(contexto, luz.lua, light);
+    this.batSignal.drawMoon(contexto, luz.lua, fade, light);
+    contexto.restore();
   }
   desenharPredios(contexto, buildings, layer, origem, deslocamento, tempo, reduced) {
     const ground = 895 + layer * 95;

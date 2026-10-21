@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BatSignal, moonLayout, symbolBounds, prepareSilhouette, visibleSky } from '../src/views/scenes/BatSignal.js';
 import { LOBBY, assetURL } from '../src/config/lobby.js';
+import { GothamBackdrop } from '../src/views/scenes/GothamBackdrop.js';
+import { CENARIOS } from '../src/config/configuracao.js';
+import { Level1Background } from '../src/views/world/Level1Background.js';
 
 test('lua e silhueta compartilham o centro em paisagem, retrato e ultrawide', () => {
   for (const [width, height] of [[1920,1080],[1280,720],[390,844],[2560,1080],[900,500]]) {
@@ -91,4 +94,43 @@ test('carregamento aponta para a mesma constante da logo e falha sem quebrar o s
     if (OriginalImage === undefined) delete globalThis.Image;
     else globalThis.Image = OriginalImage;
   }
+});
+
+// A lente fica sobre a reta refletor -> centro da lua, e o feixe, o refletor e a lua usam a MESMA lua.
+test('refletor, lente, feixe, lua e símbolo saem da mesma referência em qualquer tamanho', () => {
+  const contexto = new Proxy({ globalAlpha: 1 }, { get: (alvo, chave) => chave in alvo ? alvo[chave] : () => ({ addColorStop() {} }), set: (alvo, chave, valor) => { alvo[chave] = valor; return true; } });
+  for (const [largura, altura, aspecto] of [[900, 500, 16 / 9], [1920, 1080, 16 / 9], [900, 500, 390 / 844], [900, 500, 2560 / 1080]]) {
+    const cenario = new GothamBackdrop();
+    const sinal = cenario.batSignal, chamadas = {};
+    for (const nome of ['drawBeam', 'drawMoon', 'drawHalo', 'drawReflector']) {
+      const original = sinal[nome].bind(sinal);
+      sinal[nome] = (...argumentos) => { chamadas[nome] = argumentos; return original(...argumentos); };
+    }
+    cenario.draw(contexto, largura, altura, 5000, 0, true, aspecto);
+    const lua = moonLayout(largura, altura, sinal.config, aspecto);
+    assert.deepEqual(chamadas.drawMoon[1], lua, 'lua e símbolo no centro calculado');
+    assert.deepEqual(chamadas.drawHalo[1], lua, 'halo no mesmo centro');
+    assert.deepEqual(chamadas.drawBeam[1], lua, 'feixe termina no centro da lua');
+    // O refletor (na escala base) mira a mesma lua, só convertida de unidade.
+    const luaBase = chamadas.drawReflector[2];
+    assert.ok(Math.abs(luaBase.x * largura / LOBBY.base.width - lua.x) < 1e-9);
+    assert.ok(Math.abs(luaBase.y * altura / LOBBY.base.height - lua.y) < 1e-9);
+    // A lente do feixe é a frente do refletor, sobre a reta até o centro da lua.
+    const origemBase = chamadas.drawReflector[1], lente = chamadas.drawBeam[7];
+    const esperada = sinal.lensPoint(origemBase, luaBase, 1);
+    assert.ok(Math.abs(esperada.x * largura / LOBBY.base.width - lente.x) < 1e-9);
+    assert.ok(Math.abs(esperada.y * altura / LOBBY.base.height - lente.y) < 1e-9);
+    const origem = chamadas.drawBeam[2];
+    const cruzado = (lente.x - origem.x) * (lua.y - origem.y) - (lente.y - origem.y) * (lua.x - origem.x);
+    assert.ok(Math.abs(cruzado) < 1e-6 * Math.hypot(lua.x - origem.x, lua.y - origem.y) * LOBBY.batSignal.lensOffset, 'lente alinhada ao feixe');
+  }
+});
+
+test('na Fase 1 a lua acompanha a câmera e o feixe e o refletor apontam para ela', () => {
+  const fundo = new Level1Background(1100, 500), sinal = fundo.layoutDoSinal(200);
+  assert.equal(sinal.x, CENARIOS.fase1.sinal.x - 200 * CENARIOS.fase1.parallax.sinal);
+  assert.equal(sinal.y, CENARIOS.fase1.sinal.y);
+  assert.equal(sinal.radius, CENARIOS.fase1.sinal.raio);
+  // A lua não encosta na plataforma mais alta da fase (y = 160), para não apagar sua borda de pisar.
+  assert.ok(sinal.y + sinal.radius < 160);
 });

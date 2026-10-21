@@ -84,7 +84,7 @@ test('sorteio pode alcançar os sete áudios, não repete em seguida e respeita 
     semente = (semente + 0.37) % 1;
     assert.ok(audio.playRandomVoice('penguin_hurt', () => semente));
     await new Promise(pronto => setImmediate(pronto));
-    audio.ctx.currentTime += 1 + intervalo; // espera a voz terminar + a pausa
+    audio.ctx.currentTime += 1 + intervalo + 0.001; // espera a voz terminar + a pausa (+1 ms evita arredondamento)
   }
   assert.equal(new Set(audio.tocadas).size, 7);
   audio.tocadas.forEach((name, index) => {

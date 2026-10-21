@@ -78,7 +78,8 @@ export const LOBBY = {
     }
   },
   assets: {
-    logo: "assets/images/logo.png",
+    // Logo única: lobby, telas finais e Bat-Sinal (no céu e na Fase 1) usam este arquivo.
+    logo: "assets/images/batman-logo.png",
     music: "assets/audio/lobby_theme.mp3",
     click: "assets/audio/menu_click.mp3"
   },
@@ -126,29 +127,39 @@ export const LOBBY = {
     maskContrast: 12,
     maskMaxSize: 512,
     fadeIn: 2400,
+    // Intensidade geral da fonte de luz: halo, borda da lua, feixe e luz nos prédios são frações dela.
     intensity: 0.8,
-    glowIntensity: 0.65,
+    glowIntensity: 0.75,
     haloRadius: 2.6,
-    beamWidth: 1.9,
-    beamOpacity: 0.28,
-    beamEdgeSoftness: 1.7,
+    // Borda luminosa logo fora da lua (separa a superfície do halo).
+    rimGlow: 0.45,
+    // Largura do feixe no centro da lua, em raios: 2 = o diâmetro do círculo iluminado.
+    beamWidth: 2,
+    beamOpacity: 0.2,
+    // Parte da meia-largura do feixe que esmaece nas laterais (0 = borda dura, 1 = só o eixo forte).
+    beamEdgeSoftness: 0.7,
     sourceWidth: 7,
+    // Distância do centro do refletor até a lente, de onde o feixe sai.
+    lensOffset: 5,
     sourceX: 0.84,
     flickerSpeed: 0.34,
     flickerAmount: 0.035,
-    dustCount: 22,
+    dustCount: 18,
     dustSpeed: 0.018,
-    dustOpacity: 0.22,
-    mistOpacity: 0.1,
-    mistSpeed: 0.025,
+    dustOpacity: 0.2,
+    mistCount: 2,
+    mistOpacity: 0.06,
+    mistSpeed: 0.02,
     rimIntensity: 0.24,
     rimDistance: 190,
     textureSize: 256,
+    // Luz branco-amarelada: halo, feixe e poeira usam tons da mesma fonte.
     colors: {
-      moon: "#cdd1b6",
-      crater: "#788c94",
+      moon: "#e4dfc6",
+      moonEdge: "#c7c2a6",
+      crater: "#9c9883",
       beam: "#fff1bd",
-      halo: "#dfebcf",
+      halo: "#fff0c4",
       dust: "#fff3cc",
       rim: "#e5d9aa",
       fixture: "#182331",
@@ -264,8 +275,10 @@ export const LOBBY = {
             flickerAmount: 0.28,
             flickerSpeed: 0.24,
             dustCount: 5,
+            // Derrota: sinal fraco e frio; a borda da lua acompanha o tom azulado.
             colors: {
               moon: "#516679",
+              moonEdge: "#3e4f60",
               halo: "#8299b6"
             }
           }
@@ -439,7 +452,8 @@ export const LEVELS = {
   },
   LEVEL_2: {
     id: 2,
-    name: "SALÃO ICEBERG",
+    // Nome exibido no HUD, na transição de fase e no letreiro do cenário.
+    name: "ICEBERG LOUNGE",
     subtitle: "O clube de apostas de Cobblepot",
     commonEnemy: "Penguin",
     enemyRoster: ["Penguin", "HarleyThug"],
@@ -501,6 +515,165 @@ export const KEYS = {
 };
 export const LIGHTING = { INTENSITY: 0.45 };
 export const LOGO_GOLD = "#695525";
+// ===== CENÁRIOS DAS FASES =====
+// Ajustes visuais dos fundos. Nada aqui muda plataformas, colisões ou câmera.
+// Tempos e velocidades são por quadro (o jogo atualiza 60 vezes por segundo).
+// Parallax: 0 = parado na tela; 1 = acompanha a câmera junto com as plataformas.
+export const CENARIOS = {
+  geral: {
+    // Resolução das camadas estáticas guardadas na memória.
+    // null = mesma escala da tela (1920 ÷ 900); números menores economizam memória.
+    escalaCamadas: null
+  },
+  // ----- Fase 1: Telhados de Gotham -----
+  fase1: {
+    parallax: { nuvens: 0.04, sinal: 0.12, distante: 0.1, intermediaria: 0.25, proxima: 0.55, nevoa: 0.4 },
+    // fracaoPerto: parte das gotas que fica "perto" (mais longa e visível).
+    chuva: { quantidade: 110, fracaoPerto: 0.35, velocidadeLonge: 10, velocidadePerto: 16, vento: 2.5, opacidadeLonge: 0.16, opacidadePerto: 0.34 },
+    nevoa: { opacidade: 0.34, velocidade: 0.12 },
+    nevoaDistante: 0.32,
+    brilhoHorizonte: 0.22,
+    nuvens: { velocidade: 0.05, opacidade: 0.7 },
+    // janelasPiscando: quantas janelas acendem e apagam sozinhas.
+    luzes: { janelasPiscando: 10, velocidadeJanelas: 0.006, velocidadeAntenas: 0.045 },
+    // Janelas dos prédios intermediários: fração acesa em tom quente e frio, e o brilho delas.
+    janelas: { quentes: 0.13, frias: 0.03, opacidade: 0.42 },
+    // Relâmpago só no céu. intensidade = opacidade máxima do clarão (0 desliga).
+    relampago: { intervaloMin: 480, intervaloMax: 900, intensidade: 0.1, queda: 0.005 },
+    // Bat-Sinal: mesma lua, halo, feixe e logo do lobby (LOBBY.batSignal e LOBBY.assets.logo).
+    // x e y: centro da lua; raio: tamanho dela; intensidade: fração da luz do lobby;
+    // escalaRefletor: tamanho do refletor; origemX e alturaPredioSinal: onde ele fica no telhado.
+    sinal: { x: 410, y: 100, raio: 52, intensidade: 0.9, escalaRefletor: 0.6, origemX: 725, alturaPredioSinal: 318 },
+    cores: {
+      brilhoHorizonte: "#6b4a2e",
+      nuvem: "#141c2f",
+      relampago: "#cbd5e1",
+      distante: "#121b2e",
+      janelaDistante: "#7d8db0",
+      nevoa: "#56688a",
+      intermediaria: "#0a0f1a",
+      bordaIntermediaria: "#1d283b",
+      cornija: "#131b2a",
+      janelaApagada: "#0f1727",
+      janelaQuente: "#f3d98b",
+      janelaFria: "#a5bddf",
+      proxima: "#070b13",
+      bordaProxima: "#1a2333",
+      antena: "#f05252",
+      chuva: "#93c5fd"
+    },
+    // Plataformas jogáveis da fase (telhado, ventilação e conduíte): o mesmo acabamento.
+    // borda e brilho formam a faixa clara de pisar; o resto deve ficar mais escuro que ela.
+    plataformas: {
+      materialTopo: "#3a475b",
+      materialMeio: "#26313f",
+      materialBase: "#141b27",
+      borda: "#7d8ca3",
+      brilho: "#b9c6d6",
+      contorno: "#0a0f18",
+      sombra: "rgba(0, 0, 0, 0.35)",
+      junta: "#121924",
+      painel: "#1a2230",
+      detalhe: "#2e3949",
+      detalheClaro: "#4a586c"
+    }
+  },
+  // ----- Fase 2: Iceberg Lounge do Pinguim -----
+  fase2: {
+    // palco.parallax: quanto o fundo do palco acompanha a câmera (menor = parece mais longe).
+    palco: { parallax: 0.6, velocidadeHolofote: 0.012, amplitude: 90, intensidade: 0.2, brilhoGelo: 0.65 },
+    bar: {
+      velocidadeReflexo: 0.0016,
+      opacidadeReflexo: 0.12,
+      opacidadeGarrafas: 0.3,
+      garrafas: ["#5fb3c9", "#c9a14a", "#8fc9e8", "#6d2b3d", "#3e6f5a", "#d9e6ef"]
+    },
+    // zumbido: quanto o neon oscila; velocidadeFalha: frequência das falhas curtas (0 desliga).
+    letreiro: { zumbido: 0.06, velocidadeFalha: 0.013 },
+    lustres: { brilho: 0.5, cintilas: 6 },
+    vitrines: { guardaChuvas: ["#2b2140", "#121418", "#4a1d2a"] },
+    nevoa: { velocidade: 0.15, opacidade: 0.06 },
+    cristais: { quantidade: 22, opacidade: 0.35 },
+    piso: { reflexo: 0.1 },
+    cores: {
+      paredeTopo: "#06101e",
+      paredeMeio: "#0b1d33",
+      paredeBase: "#040a14",
+      teto: "#030810",
+      pilastra: "#0c1f36",
+      ouro: "#c9a14a",
+      ouroClaro: "#e9c46a",
+      veludo: "#123a6b",
+      veludoEscuro: "#061630",
+      palcoFundo: "#081d36",
+      palcoLuz: "#123a5c",
+      palcoFrente: "#0b1626",
+      gelo: "#9fdcff",
+      geloClaro: "#e6f7ff",
+      espelho: "#0f1f33",
+      espelhoClaro: "#1b3350",
+      balcao: "#081526",
+      balcaoFrente: "#0a1a2e",
+      balcaoTampo: "#1a3150",
+      silhueta: "#03070d",
+      vitrineFundo: "#06111f",
+      vidro: "#78c0ff",
+      cabo: "#3a2c1a",
+      placa: "#050c17",
+      neon: "#7dd3fc",
+      neonForte: "#e0f6ff",
+      luzQuente: "#ffd27a",
+      luzFria: "#bfe6ff",
+      nevoa: "#9cc7e8"
+    }
+  },
+  // ----- Fase 3: Asilo Arkham -----
+  fase3: {
+    parallax: { alaDistante: 0.3, alaProxima: 0.55 },
+    // Luminárias: velocidadeOscilacao controla o ritmo (menor = mais lento).
+    // Entre inicioQueda e apagada a luz enfraquece aos poucos; zumbido é a variação miúda.
+    luzes: { velocidadeOscilacao: 0.02, inicioQueda: 0.8, apagada: 0.99, zumbido: 0.06,
+      // abertura: quanto a luz se espalha por unidade de altura; cone, halo e reflexo: brilho de cada parte.
+      abertura: 0.32, cone: 0.22, halo: 0.55, reflexo: 0.3 },
+    // altura: espessura da faixa de névoa acima do chão.
+    nevoa: { velocidade: 0.012, opacidade: 0.1, altura: 46 },
+    // Posições (x) de onde pingam as goteiras e o intervalo entre gotas, em quadros.
+    goteiras: { posicoes: [300, 520, 690, 840, 1012], intervaloMin: 110, intervaloMax: 260 },
+    cores: {
+      paredeBase: "#0b1512",
+      teto: "#08090a",
+      luz: "#86efac",
+      lampada: "#f0fdf4",
+      calha: "#1f2326",
+      agua: "#9ad7c9",
+      nevoa: "#5f7d74",
+      fundoAla: "#0f1513",
+      fundoAlaBase: "#18221e",
+      arcoAla: "#161b19",
+      argamassa: "#232826",
+      grade: "#52525b",
+      celaEscura: "#030405",
+      catre: "#0c0d0e",
+      batente: "#141617",
+      pedraArco: "#1e1f20",
+      azulejo: "#18221f",
+      azulejoLascado: "#111816",
+      rejunte: "#0e1513",
+      faixa: "#0a0f0e",
+      mancha: "#050807",
+      rachadura: "#060808",
+      cano: "#1d2224",
+      canoClaro: "#3a4246",
+      flange: "#2b3135",
+      registro: "#5b3a2a",
+      placa: "#0d0f0f",
+      placaEsmalte: "#1f3a4a",
+      textoPlaca: "#d4d4c8",
+      alerta: "#d4a52a",
+      sombra: "#000000"
+    }
+  }
+};
 // ===== ÁUDIO =====
 export const AUDIO_CONFIG = {
   // Volumes entre 0 (silêncio) e 1 (máximo).
@@ -958,7 +1131,6 @@ export const APARENCIA = {
     "contorno15": "#0284c7",
     "fonte1": "900 24px \"Arial Black\", sans-serif",
     "preenchimento16": "#bae6fd",
-    "texto1": "SALÃO ICEBERG",
     "contorno18": "#f472b6",
     "brilho19": "#ec4899",
     "preenchimento21": "#fef08a",

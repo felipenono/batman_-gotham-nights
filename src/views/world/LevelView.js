@@ -22,6 +22,8 @@ export class LevelView {
         break;
       default: this.background = new Level1Background(this.model.width, this.model.height);
     }
+    // Cenários com luz projetada (Fase 3) precisam saber onde ficam as superfícies.
+    this.background.usarPlataformas?.(this.model.platforms);
   }
   update(passoTempo = 1, cameraDoJogo = null) {
     if (this.background) {
