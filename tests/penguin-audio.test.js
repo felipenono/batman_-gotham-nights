@@ -17,14 +17,17 @@ function shot(target) {
   return projectile;
 }
 
-test('sete reações distintas do Pinguim têm arquivos Ogg registrados', () => {
+test('sete reações distintas do Pinguim têm arquivos MP3 registrados', () => {
   assert.equal(reactions.length, 7);
   assert.equal(new Set(reactions).size, 7);
   for (const name of reactions) {
     const file = AUDIO_CONFIG.VOZES[name].arquivo;
+    assert.match(file, /\.mp3$/);
     const bytes = readFileSync(new URL('../public/' + file, import.meta.url));
-    assert.equal(bytes.subarray(0, 4).toString(), 'OggS');
-    assert.ok(bytes.includes(Buffer.from('OpusHead')));
+    // MP3 começa com a etiqueta ID3 ou direto com um quadro de áudio (0xFFEx).
+    const temId3 = bytes.subarray(0, 3).toString() === 'ID3';
+    const temQuadro = bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0;
+    assert.ok(temId3 || temQuadro, `${file} não é um MP3 válido`);
   }
 });
 

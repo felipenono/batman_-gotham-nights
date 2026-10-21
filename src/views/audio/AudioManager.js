@@ -82,7 +82,7 @@ export class AudioManager {
     if (!this.ctx || this.isMuted) return;
     SoundEffects.play(tipo, this.ctx, this.sfxGain);
   }
-  // ===== FALAS E REAÇÕES GRAVADAS (MP3/OGG) =====
+  // ===== FALAS E REAÇÕES GRAVADAS (MP3) =====
   // Baixa e decodifica todas as falas assim que o áudio é liberado.
   _preloadVozes() {
     for (const nome of Object.keys(AUDIO_CONFIG.VOZES || {})) this._carregarVoz(nome);

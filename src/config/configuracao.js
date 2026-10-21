@@ -509,20 +509,20 @@ export const AUDIO_CONFIG = {
     BGM: 0.35,
     SFX: 0.55
   },
-  // Falas e reações dos personagens (MP3/OGG em public/assets/audio/).
+  // Falas e reações dos personagens (MP3 em public/assets/audio/).
   // volume: 0 a 1, multiplicado pelo volume de efeitos (SFX).
   VOZES: {
     scarecrow_intro: {
       arquivo: "assets/audio/scarecrow_intro.mp3",
       volume: 1
     },
-    penguin_hurt_01: { arquivo: "assets/audio/penguin_hurt_01.ogg", volume: 1 },
-    penguin_hurt_02: { arquivo: "assets/audio/penguin_hurt_02.ogg", volume: 1 },
-    penguin_hurt_03: { arquivo: "assets/audio/penguin_hurt_03.ogg", volume: 1 },
-    penguin_hurt_04: { arquivo: "assets/audio/penguin_hurt_04.ogg", volume: 1 },
-    penguin_hurt_05: { arquivo: "assets/audio/penguin_hurt_05.ogg", volume: 1 },
-    penguin_hurt_06: { arquivo: "assets/audio/penguin_hurt_06.ogg", volume: 1 },
-    penguin_hurt_07: { arquivo: "assets/audio/penguin_hurt_07.ogg", volume: 1 }
+    penguin_hurt_01: { arquivo: "assets/audio/penguin_hurt_01.mp3", volume: 1 },
+    penguin_hurt_02: { arquivo: "assets/audio/penguin_hurt_02.mp3", volume: 1 },
+    penguin_hurt_03: { arquivo: "assets/audio/penguin_hurt_03.mp3", volume: 1 },
+    penguin_hurt_04: { arquivo: "assets/audio/penguin_hurt_04.mp3", volume: 1 },
+    penguin_hurt_05: { arquivo: "assets/audio/penguin_hurt_05.mp3", volume: 1 },
+    penguin_hurt_06: { arquivo: "assets/audio/penguin_hurt_06.mp3", volume: 1 },
+    penguin_hurt_07: { arquivo: "assets/audio/penguin_hurt_07.mp3", volume: 1 }
   },
   GRUPOS_VOZES: {
     penguin_hurt: [

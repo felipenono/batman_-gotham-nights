@@ -80,7 +80,7 @@ As regras ficam em [src/config/configuracao.js](src/config/configuracao.js): `GA
 
 Para criar um ator, adicione sua classe em `models/entities/` e seu desenho em `views/renderers/` ou `views/sprites/`. Registre o desenho em `EntityRenderer`; subclasses de `Character` compartilham o renderizador de sprites. Regras de combate ficam em `CombatSystem`, sem código de desenho.
 
-Os seis personagens usam os PNGs fornecidos e animações de parado, movimento, salto, ataque, dano e morte em Canvas. Os arquivos `public/assets/audio/penguin_hurt_01.ogg` a `penguin_hurt_07.ogg` são as gravações fornecidas, preservadas sem cortes. `AUDIO_CONFIG.VOZES` define caminhos e volumes; `GRUPOS_VOZES` define o sorteio. Os eventos de dano passam do Model pelo Controller ao áudio, respeitando mudo e volume. O navegador libera o som após uma interação; trilhas opcionais ausentes usam o sintetizador.
+Os seis personagens usam os PNGs fornecidos e animações de parado, movimento, salto, ataque, dano e morte em Canvas. Os arquivos `public/assets/audio/penguin_hurt_01.mp3` a `penguin_hurt_07.mp3` são as gravações fornecidas, preservadas sem cortes. `AUDIO_CONFIG.VOZES` define caminhos e volumes; `GRUPOS_VOZES` define o sorteio. Os eventos de dano passam do Model pelo Controller ao áudio, respeitando mudo e volume. O navegador libera o som após uma interação; trilhas opcionais ausentes usam o sintetizador.
 
 ## Verificar e compilar
 
