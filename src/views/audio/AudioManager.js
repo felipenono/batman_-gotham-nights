@@ -26,6 +26,10 @@ export class AudioManager {
     this.nextNoteTime = 0;
     // Guarda as falas já carregadas para não baixar o arquivo de novo.
     this.vozes = new Map();
+    // Instante (relógio do áudio) em que cada grupo de vozes pode tocar de novo.
+    this.liberaGrupo = new Map();
+    // Última voz tocada em cada grupo, para não repetir em seguida.
+    this.ultimaVozDoGrupo = new Map();
     this._initContext = this._initContext.bind(this);
     this._scheduler = this._scheduler.bind(this);
     window.addEventListener("keydown", this._initContext, { once: true });
@@ -107,22 +111,37 @@ export class AudioManager {
     }
     return this.vozes.get(nome);
   }
-  // Sorteia uma reação a cada dano confirmado; não deixa sons pendentes no mudo.
+  // Sorteia uma reação a cada dano confirmado, mas só se nenhuma voz do mesmo
+  // grupo estiver tocando; não deixa sons pendentes no mudo.
   playRandomVoice(grupo, sortear = Math.random) {
     const nomes = AUDIO_CONFIG.GRUPOS_VOZES?.[grupo];
     if (!nomes?.length || !this.ctx || this.isMuted || this.encerrado) return;
-    const nome = nomes[Math.floor(sortear() * nomes.length)];
-    this.playVoice(nome);
+    const agora = this.ctx.currentTime ?? 0;
+    if (agora < (this.liberaGrupo.get(grupo) ?? 0)) return; // grupo ainda ocupado
+    // Evita repetir a mesma voz duas vezes seguidas.
+    const ultima = this.ultimaVozDoGrupo.get(grupo);
+    const opcoes = nomes.length > 1 ? nomes.filter((n) => n !== ultima) : nomes;
+    const nome = opcoes[Math.floor(sortear() * opcoes.length)];
+    // Trava provisória: impede que dois danos no mesmo instante toquem juntos.
+    this.liberaGrupo.set(grupo, agora + 1);
+    this.ultimaVozDoGrupo.set(grupo, nome);
+    const intervalo = AUDIO_CONFIG.INTERVALO_GRUPOS?.[grupo] ?? 0;
+    Promise.resolve(this.playVoice(nome)).then((duracao) => {
+      // Libera o grupo quando a voz termina + a pausa configurada.
+      if (duracao) this.liberaGrupo.set(grupo, agora + duracao + intervalo);
+      else this.liberaGrupo.delete(grupo); // não tocou: libera na hora
+    });
     return nome;
   }
   // Toca uma fala gravada pelo canal de efeitos (respeita mudo e volume).
+  // Devolve uma promessa com a duração do som tocado (ou vazio se não tocou).
   playVoice(nome) {
     if (!nome || !this.ctx || this.isMuted) return;
     const config = AUDIO_CONFIG.VOZES?.[nome];
     const carregando = this._carregarVoz(nome);
     if (!config || !carregando) return;
     const contexto = this.ctx;
-    carregando.then((buffer) => {
+    return carregando.then((buffer) => {
       if (!buffer || this.ctx !== contexto || this.isMuted) return;
       const fonte = contexto.createBufferSource();
       fonte.buffer = buffer;
@@ -131,6 +150,7 @@ export class AudioManager {
       fonte.connect(ganho);
       ganho.connect(this.sfxGain);
       fonte.start();
+      return buffer.duration;
     });
   }
   _startScheduler() {

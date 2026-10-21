@@ -530,6 +530,10 @@ export const AUDIO_CONFIG = {
       "penguin_hurt_05", "penguin_hurt_06", "penguin_hurt_07"
     ]
   },
+  // Pausa (em segundos) depois que uma voz do grupo termina, antes de outra poder tocar.
+  INTERVALO_GRUPOS: {
+    penguin_hurt: 0.6
+  },
   // Andamento das músicas em batidas por minuto.
   TEMPOS: {
     ROOFTOPS: 116,

@@ -63,28 +63,67 @@ test('invulnerabilidade e disparo sem impacto não emitem reação de dano', () 
   assert.deepEqual(events, []);
 });
 
-test('sorteio pode alcançar os sete áudios e respeita mudo, contexto bloqueado e descarte', () => {
+// Cria um AudioManager falso com relógio controlado pelo teste.
+function audioFalso(duracao = 2) {
   const audio = Object.create(AudioManager.prototype);
-  audio.ctx = {};
+  audio.ctx = { currentTime: 0 };
   audio.isMuted = false;
   audio.encerrado = false;
-  const selected = [];
-  audio.playVoice = name => selected.push(name);
-  reactions.forEach((name, index) => {
-    assert.equal(audio.playRandomVoice('penguin_hurt', () => (index + 0.5) / reactions.length), name);
+  audio.liberaGrupo = new Map();
+  audio.ultimaVozDoGrupo = new Map();
+  audio.tocadas = [];
+  audio.playVoice = name => { audio.tocadas.push(name); return Promise.resolve(duracao); };
+  return audio;
+}
+
+test('sorteio pode alcançar os sete áudios, não repete em seguida e respeita mudo, contexto bloqueado e descarte', async () => {
+  const audio = audioFalso(1);
+  const intervalo = AUDIO_CONFIG.INTERVALO_GRUPOS.penguin_hurt;
+  let semente = 0;
+  for (let i = 0; i < 60; i++) {
+    semente = (semente + 0.37) % 1;
+    assert.ok(audio.playRandomVoice('penguin_hurt', () => semente));
+    await new Promise(pronto => setImmediate(pronto));
+    audio.ctx.currentTime += 1 + intervalo; // espera a voz terminar + a pausa
+  }
+  assert.equal(new Set(audio.tocadas).size, 7);
+  audio.tocadas.forEach((name, index) => {
+    if (index > 0) assert.notEqual(name, audio.tocadas[index - 1]);
   });
-  assert.deepEqual(selected, reactions);
+  const total = audio.tocadas.length;
   audio.isMuted = true;
   audio.playRandomVoice('penguin_hurt');
   audio.isMuted = false;
+  const ctx = audio.ctx;
   audio.ctx = null;
   audio.playRandomVoice('penguin_hurt');
-  audio.ctx = {};
+  audio.ctx = ctx;
   audio.encerrado = true;
   audio.playRandomVoice('penguin_hurt');
   audio.encerrado = false;
   audio.playRandomVoice(undefined);
-  assert.equal(selected.length, 7);
+  assert.equal(audio.tocadas.length, total);
+});
+
+test('nova reação do Pinguim espera a anterior terminar mais a pausa configurada', async () => {
+  const audio = audioFalso(2);
+  const intervalo = AUDIO_CONFIG.INTERVALO_GRUPOS.penguin_hurt;
+  assert.ok(audio.playRandomVoice('penguin_hurt'));
+  // Dois danos no mesmo instante: o segundo não toca.
+  assert.equal(audio.playRandomVoice('penguin_hurt'), undefined);
+  await new Promise(pronto => setImmediate(pronto));
+  audio.ctx.currentTime = 2 + intervalo - 0.01;
+  assert.equal(audio.playRandomVoice('penguin_hurt'), undefined);
+  audio.ctx.currentTime = 2 + intervalo;
+  assert.ok(audio.playRandomVoice('penguin_hurt'));
+  assert.equal(audio.tocadas.length, 2);
+});
+
+test('reação que não tocou libera o grupo na hora', async () => {
+  const audio = audioFalso(null); // null = a voz não chegou a tocar
+  assert.ok(audio.playRandomVoice('penguin_hurt'));
+  await new Promise(pronto => setImmediate(pronto));
+  assert.ok(audio.playRandomVoice('penguin_hurt'));
 });
 
 test('áudios são carregados uma vez e a reprodução utiliza o canal de efeitos', async () => {
