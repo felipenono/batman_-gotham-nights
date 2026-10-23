@@ -34,7 +34,10 @@ export class Spawner {
     this.currentLevelConfig = levelConfig;
     this.killsInLevel = 0;
     this.timer = 60;
-    this.interval = levelConfig.id === 3 ? 360 : 300;
+    const difficulty = levelConfig.difficulty ?? 1;
+    this.interval = 300 / difficulty;
+    this.maxActive = Math.round(5 * difficulty);
+    this.timer = 60 / difficulty;
   }
   /**
   * [POO - GETTER COMPUTADO / REGRA DE NEGÓCIO DO CHEFE]
@@ -59,12 +62,12 @@ export class Spawner {
     if (this.thresholdReached || bossActive || !this.currentLevelConfig) {
       return;
     }
-    const maxActive = this.currentLevelConfig.id === 3 ? 4 : 5;
+    const maxActive = this.maxActive;
     const activeCount = this.contarInimigosAtivos(enemiesList);
     if (activeCount >= maxActive) return;
     this.timer--;
     if (this.timer <= 0) {
-      this.timer = this.interval;
+      this.timer += this.interval;
       this.spawnWave(enemiesList, worldWidth, worldHeight);
     }
   }
@@ -76,8 +79,8 @@ export class Spawner {
     return quantidade;
   }
   spawnWave(enemiesList, worldWidth, worldHeight) {
-    const maxActive = this.currentLevelConfig.id === 3 ? 4 : 5;
-    const waveSize = Math.min(this.currentLevelConfig.id === 3 ? 2 : 3, maxActive - this.contarInimigosAtivos(enemiesList));
+    const maxActive = this.maxActive;
+    const waveSize = Math.min(3, maxActive - this.contarInimigosAtivos(enemiesList));
     const roster = this.currentLevelConfig.enemyRoster;
     for (let indiceItem = 0; indiceItem < waveSize; indiceItem++) {
       const spawnFromRight = Math.random() > 0.4;

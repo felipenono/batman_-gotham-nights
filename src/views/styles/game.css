@@ -148,3 +148,131 @@ body {
   opacity: .4;
   cursor: wait;
 }
+
+/* Controles virtuais: apenas em dispositivos com ponteiro de toque. */
+#touch-controls { display: none; }
+#touch-controls[hidden] { display: none !important; }
+#fullscreen-button[hidden], #fullscreen-status[hidden] { display: none !important; }
+.touch-fullscreen, .fullscreen-status { display: none; }
+@media (any-pointer: coarse) {
+  .arcade-cabinet { --touch-toolbar-top: max(12px, env(safe-area-inset-top)); }
+  html, body { touch-action: pan-x pan-y; overscroll-behavior: none; }
+  body .game-wrapper { height: 100dvh; }
+  #game-canvas { touch-action: none; }
+  #touch-controls {
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 12px max(16px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    pointer-events: none;
+    touch-action: none;
+  }
+  .touch-group { display: flex; align-items: flex-end; gap: 10px; }
+  .touch-button {
+    width: 60px;
+    height: 60px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #e9c46a9c;
+    border-radius: 16px;
+    color: #f6dda0;
+    background: #081321d9;
+    box-shadow: 0 3px 12px #0008;
+    backdrop-filter: blur(4px);
+    font: 700 11px system-ui, sans-serif;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    pointer-events: auto;
+  }
+  .touch-joystick {
+    --stick-x: 0px;
+    --stick-y: 0px;
+    position: relative;
+    width: 112px;
+    height: 112px;
+    flex-shrink: 0;
+    border: 1px solid #e9c46a80;
+    border-radius: 50%;
+    background: radial-gradient(circle, #182839b3 30%, #081321c9 72%);
+    box-shadow: inset 0 0 16px #0008, 0 3px 12px #0008;
+    touch-action: none;
+    pointer-events: auto;
+    -webkit-touch-callout: none;
+  }
+  .touch-joystick-track {
+    position: absolute;
+    inset: 19%;
+    border: 1px solid #e9c46a30;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .touch-joystick-thumb {
+    position: absolute;
+    left: 29%;
+    top: 29%;
+    width: 42%;
+    height: 42%;
+    border: 1px solid #f6dda0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ead089, #9e7835);
+    box-shadow: 0 3px 10px #0009;
+    transform: translate(var(--stick-x), var(--stick-y));
+    transition: transform .1s ease-out;
+    pointer-events: none;
+  }
+  .touch-joystick.is-pressed .touch-joystick-thumb { transition: none; }
+  .touch-fire { width: 78px; background: #c9a14ce6; color: #111b26; }
+  .touch-pause { position: absolute; left: calc(50% - 48px); top: var(--touch-toolbar-top); width: 42px; height: 42px; font-size: 18px; }
+  .touch-fullscreen {
+    position: absolute;
+    z-index: 16;
+    left: calc(50% + 6px);
+    top: var(--touch-toolbar-top);
+    width: 42px;
+    height: 42px;
+    font-size: 26px;
+    cursor: pointer;
+  }
+  .fullscreen-status {
+    display: block;
+    position: absolute;
+    z-index: 17;
+    left: 50%;
+    top: calc(var(--touch-toolbar-top) + 54px);
+    transform: translateX(-50%);
+    width: min(340px, calc(100% - 32px));
+    padding: 10px 12px;
+    border: 1px solid #e9c46a80;
+    border-radius: 8px;
+    color: #f6dda0;
+    background: #081321f2;
+    font-size: 12px;
+    text-align: center;
+    pointer-events: none;
+  }
+  .touch-button.is-pressed { background: #f1cf77; color: #101827; transform: translateY(2px); }
+  .touch-button:disabled { opacity: .3; }
+  .touch-button:focus-visible { outline: 2px solid #fff1c8; outline-offset: 3px; }
+}
+@media (any-pointer: coarse) and (orientation: landscape) {
+  /* Preserva a barra dos chefes acima dos botoes, inclusive com letterbox. */
+  .arcade-cabinet { --touch-toolbar-top: max(12px, env(safe-area-inset-top), calc(50dvh - min(50dvh, 28.125vw) + min(12dvh, 6.75vw))); }
+}
+@media (any-pointer: coarse) and (max-width: 420px) {
+  #touch-controls { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+  .touch-group { gap: 8px; }
+  .touch-button { width: 48px; height: 54px; border-radius: 14px; }
+  .touch-fire { width: 64px; }
+  .touch-pause { width: 38px; height: 38px; }
+  .touch-fullscreen { width: 38px; height: 38px; }
+  .touch-joystick { width: 96px; height: 96px; }
+}
+@media (any-pointer: coarse) and (max-height: 500px) {
+  .touch-button { height: 52px; }
+  .touch-pause { height: 38px; }
+  .touch-fullscreen { height: 38px; }
+  .touch-joystick { width: 96px; height: 96px; }
+}

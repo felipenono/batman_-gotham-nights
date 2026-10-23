@@ -22,7 +22,7 @@ export class GameModel {
     this.camera = new Camera(this.width, this.height);
     this.physics = new Physics(GAME.GRAVITY);
     // O modelo emite o evento; o controller escolhe como reproduzir o som.
-    this.combat = new CombatSystem({ camera: this.camera, onSound, onEnemyDamaged });
+    this.combat = new CombatSystem({ camera: this.camera, onSound, onEnemyDamaged, onPlayerDamaged: () => this.scoreManager.registrarDano() });
     this.spawner = new Spawner();
     this.bossManager = new BossManager();
     this.levelManager = new LevelManager();

@@ -27,7 +27,8 @@ Abra **http://localhost:3000** ou a porta indicada pelo Vite. Mantenha o termina
 | Alternar som | M |
 | Navegar nas telas | Mouse, setas e Enter/Espaço; Esc retorna ao menu nos resultados |
 
-- Cada clique ou pressionamento lança um batarangue: segurar não repete. Recarga de **0,5 s**, até **cinco ativos**; tentativas bloqueadas são descartadas.
+- Batarangues: **cinco por carga**, intervalo de **0,1 s** entre tiros e reposição dos cinco após **1 s sem disparar**. Clique para tiros individuais ou segure o botão esquerdo para disparar e recarregar continuamente. Pelo teclado, cada pressionamento dispara uma vez.
+- No celular, use as setas para andar e os botões PULAR e ATIRAR. É possível combinar os botões; segurar ATIRAR mantém os disparos e a recarga automática. O botão central pausa e continua o jogo.
 - Batman começa cada fase com **cinco vidas e três pontos de saúde por vida**. Após reaparecer, fica protegido de inimigos por um segundo.
 - Derrote as ondas para liberar os chefes. A derrota permite tentar novamente a fase atual; jogar novamente após a vitória começa na fase 1.
 - Abates e bônus por tempo geram pontos. O recorde fica no `localStorage`; a pausa congela o relógio da fase.

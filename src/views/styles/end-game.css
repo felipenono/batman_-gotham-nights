@@ -395,12 +395,37 @@
   color: var(--result-muted);
   font-size: 10px;
 }
-.result-breakdown>div {
+.result-enemy-list>div,
+.result-breakdown-bonus>div {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid var(--result-border);
   padding: 8px 0;
+}
+.result-breakdown-group {
+  min-width: 0;
+}
+.result-breakdown-group h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--result-border);
+  font-size: 10px;
+  font-weight: 400;
+  text-align: left;
+}
+.result-breakdown-group h2 span {
+  color: var(--result-accent);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.result-breakdown dd {
+  flex-shrink: 0;
 }
 .result-breakdown dt {
   text-align: left;

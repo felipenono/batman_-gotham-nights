@@ -1,6 +1,5 @@
 import { APARENCIA } from '../config/configuracao.js';
 import { GameState } from '../models/GameState.js';
-import { Batarang } from '../models/entities/projectiles/Batarang.js';
 import { HUD } from './HUD.js';
 import { LevelView } from './world/LevelView.js';
 import { EntityRenderer } from './renderers/EntityRenderer.js';
@@ -91,7 +90,7 @@ export class GameView {
     drawCombat.call(this.combat, this.ctx, this.width, this.height);
     this.ctx.restore();
     drawBossIntro.call(this.bossManager, this.ctx, this.width, this.height);
-    HUD.draw(this.ctx, this.player, this.levelManager.currentLevelConfig, this.spawner.killsInLevel, this.bossManager.boss, this.width, this.height, this.isMuted, Batarang.available(this.projectiles), this.scoreManager);
+    HUD.draw(this.ctx, this.player, this.levelManager.currentLevelConfig, this.spawner.killsInLevel, this.bossManager.boss, this.width, this.height, this.isMuted, this.player.batarangsRemaining, this.scoreManager);
   }
   _renderMenu() {
     this.screens.menu.view.draw(this.ctx, this.width, this.height, this.screens.menu.state);

@@ -20,9 +20,4 @@ export class Batarang extends Projectile {
     });
     this.spinSpeed = 0.45;
   }
-  static available(projeteis) {
-    const active = projeteis.filter((elemento) => elemento instanceof Batarang && elemento.owner === "batman" && elemento.alive).length;
-    return Math.max(0, PROJECTILE.BATARANG_MAX_ACTIVE - active);
-  }
-
 }

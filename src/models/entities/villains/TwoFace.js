@@ -37,14 +37,14 @@ export class TwoFace extends Character {
       this.vx = 0;
     }
     if (this.coinFlipping) {
-      this.coinFlipTimer--;
+      this.coinFlipTimer -= this.attackRate ?? 1;
       if (this.coinFlipTimer <= 0) {
         this.coinFlipping = false;
         this.executeDecidedAttack(jogador, projectilesOut, playSfx);
       }
       return;
     }
-    this.attackCycleTimer--;
+    this.attackCycleTimer -= this.attackRate ?? 1;
     if (this.attackCycleTimer <= 0) {
       this.attackCycleTimer = 120 + Math.floor(Math.random() * 45);
       this.coinFlipping = true;
@@ -61,25 +61,22 @@ export class TwoFace extends Character {
     const originX = this.x + this.w / 2 + this.facing * 20;
     const originY = this.y + 30;
     const isEnraged = this.hpRatio < 0.5;
+    const targetX = jogador.x + jogador.w / 2;
+    const targetY = jogador.y + jogador.h / 2;
     if (this.nextAttackIsBullets) {
-      if (typeof playSfx === "function") {
-        playSfx("gunshot");
-      }
-      if (isEnraged) {
-        projectilesOut.push(new Bullet(originX, originY, this.facing * 8.5, -1.5));
-        projectilesOut.push(new Bullet(originX, originY, this.facing * 8.5, 1.5));
-      } else {
-        projectilesOut.push(new Bullet(originX, originY, this.facing * 9, 0));
+      if (typeof playSfx === "function") playSfx("gunshot");
+      const angle = Math.atan2(targetY - (originY + 4), targetX - (originX + 8));
+      const speed = isEnraged ? 8.5 : 9;
+      for (const offset of isEnraged ? [-0.16, 0.16] : [0]) {
+        projectilesOut.push(new Bullet(originX, originY, Math.cos(angle + offset) * speed, Math.sin(angle + offset) * speed));
       }
     } else {
-      if (typeof playSfx === "function") {
-        playSfx("throw");
-      }
-      const dx = jogador.x - originX;
-      const velocidadeX = Math.sign(dx) * (6 + Math.random() * 2);
-      projectilesOut.push(new Coin(originX, originY, velocidadeX, -6));
-      if (isEnraged) {
-        projectilesOut.push(new Coin(originX, originY, velocidadeX * 0.75, -8));
+      if (typeof playSfx === "function") playSfx("throw");
+      const dx = targetX - (originX + 9);
+      const dy = targetY - (originY + 9);
+      const flightTime = Math.max(12, Math.min(60, Math.round(Math.abs(dx) / 7)));
+      for (const time of isEnraged ? [flightTime, flightTime + 10] : [flightTime]) {
+        projectilesOut.push(new Coin(originX, originY, dx / time, dy / time - 0.28 * (time + 1) / 2));
       }
     }
   }

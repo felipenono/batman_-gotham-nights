@@ -1,8 +1,0 @@
-{
-  "name": "Remix Batman: Gotham Nights",
-  "description": "Cuphead-style 2D platformer boss-rush featuring Batman battling Joker, Scarecrow, Penguin, Harley Quinn, and Two-Face across Gotham.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}

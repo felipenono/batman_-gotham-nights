@@ -79,12 +79,13 @@ test('Pinguim de elite recebe a pontuação configurada para sua variante', () =
   assert.equal(placar.adicionarPontosMob(elite.scoreType), 200);
 });
 
-test('faixas fora de ordem não alteram o bônus nem a configuração recebida', () => {
-  const faixas = [{ seconds: Infinity, points: 100 }, { seconds: 180, points: 500 }, { seconds: 90, points: 1000 }];
-  const placar = new ScoreManager({ config: { ...LOBBY.scoring, timeBonuses: faixas }, storage: null });
-  assert.equal(placar.calcularBonusTempo(90), 1000);
-  assert.equal(placar.calcularBonusTempo(100), 500);
-  assert.equal(faixas[0].seconds, Infinity);
+test('bonus continuo respeita limites e nao altera a configuracao recebida', () => {
+  const bonus = { max: 1600, min: 200, decayPerSecond: 5 };
+  const placar = new ScoreManager({ config: { ...LOBBY.scoring, timeBonus: bonus }, storage: null });
+  assert.equal(placar.calcularBonusTempo(90), 1150);
+  assert.equal(placar.calcularBonusTempo(100), 1100);
+  assert.equal(placar.calcularBonusTempo(1000), 200);
+  assert.deepEqual(bonus, { max: 1600, min: 200, decayPerSecond: 5 });
 });
 
 test('um abate comum reproduz o efeito sonoro uma única vez', () => {

@@ -2,7 +2,9 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Batman: Gotham Knights</title>
     <meta
       name="description"
@@ -25,6 +27,18 @@
       <div class="arcade-cabinet">
         <canvas id="game-canvas" width="1920" height="1080"></canvas>
         <section id="screen-ui" aria-label="Telas do jogo"></section>
+        <nav id="touch-controls" data-mobile-controls aria-label="Controles de toque" hidden>
+          <div class="touch-joystick" data-touch-joystick role="group" aria-label="Joystick: arraste para os lados para andar e para cima para pular">
+            <span class="touch-joystick-track" aria-hidden="true"></span>
+            <span class="touch-joystick-thumb" aria-hidden="true"></span>
+          </div>
+          <button type="button" class="touch-button touch-pause" data-touch-pause aria-label="Pausar jogo">II</button>
+          <div class="touch-group">
+            <button type="button" class="touch-button touch-fire" data-touch-action="SHOOT">ATIRAR</button>
+          </div>
+        </nav>
+        <button type="button" id="fullscreen-button" class="touch-button touch-fullscreen" data-mobile-controls aria-label="Entrar em tela cheia" aria-pressed="false" title="Tela cheia" hidden>&#x26F6;</button>
+        <p id="fullscreen-status" class="fullscreen-status" role="status" hidden></p>
         <div id="scene-transition" aria-hidden="true"></div>
       </div>
 

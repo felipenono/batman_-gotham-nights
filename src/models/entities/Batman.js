@@ -1,7 +1,6 @@
 // Este arquivo cuida de controlar movimento, saltos, ataques e vidas do jogador.
 // ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
 import { Character } from "./Character.js";
-import { Batarang } from "./projectiles/Batarang.js";
 import { GAME, PROJECTILE } from "../../config/configuracao.js";
 // ===== COMPORTAMENTO =====
 export class Batman extends Character {
@@ -22,6 +21,8 @@ export class Batman extends Character {
     this.jumpBufferTimer = 0;
     this.coyoteTimer = 0;
     this.shootCooldown = 0;
+    this.batarangsRemaining = PROJECTILE.BATARANG_CAPACITY;
+    this.batarangReloadTimer = 0;
     this.spawnPoint = {
       x: posicaoX,
       y: posicaoY
@@ -100,6 +101,8 @@ export class Batman extends Character {
     this.hurtFlash = 0;
     this.fearTimer = 0;
     this.shootCooldown = 0;
+    this.batarangsRemaining = PROJECTILE.BATARANG_CAPACITY;
+    this.batarangReloadTimer = 0;
   }
 
   /**
@@ -107,8 +110,10 @@ export class Batman extends Character {
   * Calcula o vetor balístico e instancia um novo Batarang.
   */
   throwBatarang(mouse, isMouseFiring, projectilesOut, createBatarang) {
-    if (!this.alive || this.shootCooldown > 0 || Batarang.available(projectilesOut) === 0) return;
+    if (!this.alive || this.deathTimer > 0 || this.shootCooldown > 0 || this.batarangsRemaining === 0) return;
     this.shootCooldown = PROJECTILE.BATARANG_COOLDOWN;
+    this.batarangsRemaining--;
+    this.batarangReloadTimer = PROJECTILE.BATARANG_RELOAD;
     this.throwAnimTimer = 10;
     const originX = this.x + this.w / 2 + this.facing * 16;
     const originY = this.y + 26;
@@ -147,7 +152,11 @@ export class Batman extends Character {
     }
     if (this.intangibleTimer > 0) this.intangibleTimer = Math.max(0, this.intangibleTimer - passoTempo);
     this.animTime += passoTempo * 0.15;
-    if (this.shootCooldown > 0) this.shootCooldown -= passoTempo;
+    this.shootCooldown = Math.max(0, this.shootCooldown - passoTempo);
+    if (this.batarangReloadTimer > 0) {
+      this.batarangReloadTimer = Math.max(0, this.batarangReloadTimer - passoTempo);
+      if (this.batarangReloadTimer === 0) this.batarangsRemaining = PROJECTILE.BATARANG_CAPACITY;
+    }
     if (this.throwAnimTimer > 0) this.throwAnimTimer -= passoTempo;
     if (this.fearTimer > 0) this.fearTimer -= passoTempo;
   }

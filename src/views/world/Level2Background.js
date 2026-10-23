@@ -1,12 +1,11 @@
 // Este arquivo cuida de desenhar o Iceberg Lounge do Pinguim (Fase 2).
 // Clube de luxo frio: azul profundo, detalhes dourados, bar, palco com escultura de gelo,
-// vitrines de guarda-chuvas, lustres de cristal e letreiro de neon.
+// vitrines de guarda-chuvas, lustres de cristal.
 // Camadas: fundo do palco (parallax) → salão estático → luzes animadas → névoa e cristais de gelo.
 // ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
-import { APARENCIA, CENARIOS, LEVELS, LIGHTING } from "../../config/configuracao.js";
+import { CENARIOS, LIGHTING } from "../../config/configuracao.js";
 import { Background } from "./Background.js";
-import { criarSorteio, desenharCamada, movimentoReduzido, obterCamada, rgba, suavizar } from "./camadas.js";
-const estiloVisual = APARENCIA.Level2Background;
+import { criarSorteio, desenharCamada, movimentoReduzido, obterCamada, rgba } from "./camadas.js";
 const ajustes = CENARIOS.fase2;
 const cores = ajustes.cores;
 
@@ -18,7 +17,6 @@ const BAR = { esquerda: 30, direita: 318, espelhoTopo: 138, espelhoBase: 300, ba
 const VITRINES = [800, 895, 990];
 const LUSTRES = [250, 960];
 const MESAS = [356, 744];
-const LETREIRO = { x: 550, y: 50, largura: 280, altura: 40 };
 // Fundo do palco: camada mais larga que a abertura para cobrir o deslocamento do parallax.
 const FUNDO_PALCO = { largura: 470, inicio: 315 };
 
@@ -46,7 +44,6 @@ export class Level2Background extends Background {
     this.pintar = {
       salao: desenharSalaoEstatico.bind(null, largura, altura),
       fundoPalco: desenharFundoDoPalco,
-      letreiro: desenharLetreiroAceso,
       brilhoLustre: desenharBrilhoDeLustre
     };
   }
@@ -77,7 +74,6 @@ export class Level2Background extends Background {
     this.desenharHolofotes(contexto);
     this.desenharLuzesDaRibalta(contexto);
     this.desenharReflexoDoEspelho(contexto);
-    this.desenharLetreiro(contexto);
     this.desenharLustres(contexto);
     this.desenharAbajures(contexto);
     this.desenharNevoaFria(contexto);
@@ -166,21 +162,6 @@ export class Level2Background extends Background {
     contexto.lineTo(posicaoX - 70, BAR.espelhoBase);
     contexto.closePath();
     contexto.fill();
-    contexto.restore();
-  }
-  // Letreiro de neon azul: aceso quase sempre, com um zumbido suave e, raramente, uma falha curta.
-  desenharLetreiro(contexto) {
-    const configuracao = ajustes.letreiro;
-    let brilho = 1;
-    if (!this.reduzido) {
-      brilho = 1 - configuracao.zumbido * (0.5 + 0.5 * Math.sin(this.tempo * 0.21));
-      const falha = Math.sin(this.tempo * configuracao.velocidadeFalha);
-      if (falha > 0.985) brilho *= 0.45 + (1 - suavizar((falha - 0.985) / 0.015)) * 0.55;
-    }
-    const larguraSprite = LETREIRO.largura + 60, alturaSprite = LETREIRO.altura + 40;
-    contexto.save();
-    contexto.globalAlpha = brilho * Math.min(1, LIGHTING.INTENSITY * 2);
-    desenharCamada(contexto, obterCamada("fase2-letreiro", larguraSprite, alturaSprite, this.pintar.letreiro), LETREIRO.x - larguraSprite / 2, LETREIRO.y - alturaSprite / 2, this.pintar.letreiro);
     contexto.restore();
   }
   // Brilho dos lustres respirando devagar e cintilas que acendem nos cristais.
@@ -378,7 +359,6 @@ function desenharSalaoEstatico(largura, altura, contexto) {
   desenharVitrines(contexto);
   desenharMesas(contexto);
   desenharEstruturaDosLustres(contexto);
-  desenharPlacaDoLetreiro(contexto);
 }
 
 function desenharParedes(contexto, largura, altura) {
@@ -697,49 +677,4 @@ function desenharBrilhoDeLustre(contexto) {
   brilho.addColorStop(1, rgba(cores.luzQuente, 0));
   contexto.fillStyle = brilho;
   contexto.fillRect(0, 0, 160, 120);
-}
-
-function desenharPlacaDoLetreiro(contexto) {
-  // Placa escura onde fica o neon (o neon aceso é uma camada à parte, com brilho).
-  contexto.fillStyle = cores.placa;
-  contexto.fillRect(LETREIRO.x - LETREIRO.largura / 2, LETREIRO.y - LETREIRO.altura / 2, LETREIRO.largura, LETREIRO.altura);
-  contexto.strokeStyle = rgba(cores.ouro, 0.45);
-  contexto.lineWidth = 1;
-  contexto.strokeRect(LETREIRO.x - LETREIRO.largura / 2 - 3, LETREIRO.y - LETREIRO.altura / 2 - 3, LETREIRO.largura + 6, LETREIRO.altura + 6);
-}
-
-function desenharLetreiroAceso(contexto) {
-  const larguraSprite = LETREIRO.largura + 60, alturaSprite = LETREIRO.altura + 40;
-  const centroX = larguraSprite / 2, centroY = alturaSprite / 2;
-  contexto.shadowColor = estiloVisual.brilho14;
-  contexto.shadowBlur = 10;
-  contexto.strokeStyle = cores.neon;
-  contexto.lineWidth = 2;
-  contexto.strokeRect(centroX - LETREIRO.largura / 2 + 6, centroY - LETREIRO.altura / 2 + 5, LETREIRO.largura - 12, LETREIRO.altura - 10);
-  contexto.textAlign = "center";
-  contexto.textBaseline = "middle";
-  contexto.font = estiloVisual.fonte1;
-  contexto.fillStyle = cores.neonForte;
-  // O letreiro mostra o nome da fase definido em LEVELS (um único lugar para o nome).
-  contexto.fillText(LEVELS.LEVEL_2.name, centroX - 14, centroY + 1);
-  // Pinguim de cartola em neon, à direita do nome.
-  const pinguimX = centroX + LETREIRO.largura / 2 - 26, pinguimY = centroY + 2;
-  contexto.lineWidth = 1.6;
-  contexto.beginPath();
-  contexto.ellipse(pinguimX, pinguimY + 3, 7, 9, 0, 0, Math.PI * 2);
-  contexto.moveTo(pinguimX + 3, pinguimY - 3);
-  contexto.arc(pinguimX, pinguimY - 7, 4, 0, Math.PI * 2);
-  contexto.moveTo(pinguimX - 6, pinguimY - 11);
-  contexto.lineTo(pinguimX + 6, pinguimY - 11);
-  contexto.moveTo(pinguimX - 3.5, pinguimY - 11);
-  contexto.lineTo(pinguimX - 3.5, pinguimY - 17);
-  contexto.lineTo(pinguimX + 3.5, pinguimY - 17);
-  contexto.lineTo(pinguimX + 3.5, pinguimY - 11);
-  contexto.stroke();
-  // Monóculo dourado.
-  contexto.strokeStyle = cores.ouroClaro;
-  contexto.shadowColor = cores.ouroClaro;
-  contexto.beginPath();
-  contexto.arc(pinguimX + 1.5, pinguimY - 7.5, 1.6, 0, Math.PI * 2);
-  contexto.stroke();
 }

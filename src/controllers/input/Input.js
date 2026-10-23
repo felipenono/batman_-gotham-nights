@@ -14,6 +14,9 @@ export class Input {
     this.keysPressedThisFrame = new Set();
     this._keyDownBuffer = new Set();
     this.resetVersion = 0;
+    this.virtualActions = new Set();
+    this.virtualPressed = new Set();
+    this.virtualBuffer = new Set();
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onKeyUp = this._onKeyUp.bind(this);
     this._onBlur = this._onBlur.bind(this);
@@ -45,17 +48,33 @@ export class Input {
   }
   _onBlur() {
     this.resetVersion++;
+    this.virtualActions.clear();
+    this.virtualPressed.clear();
+    this.virtualBuffer.clear();
     this.keysDown.clear();
     this._keyDownBuffer.clear();
     this.keysPressedThisFrame.clear();
   }
   // Recebe a atualização atual e avança o estado, sem redesenhar a tela.
   update() {
+    this.virtualPressed = new Set(this.virtualBuffer);
+    this.virtualBuffer.clear();
     this.keysPressedThisFrame.clear();
     for (const tecla of this._keyDownBuffer) this.keysPressedThisFrame.add(tecla);
     this._keyDownBuffer.clear();
   }
+  setVirtualAction(acao, pressed) {
+    if (!KEYS[acao]) return;
+    if (pressed) {
+      if (!this.virtualActions.has(acao)) this.virtualBuffer.add(acao);
+      this.virtualActions.add(acao);
+    } else this.virtualActions.delete(acao);
+  }
+  isVirtualDown(acao) {
+    return this.virtualActions.has(acao);
+  }
   isDown(acao) {
+    if (this.isVirtualDown(acao)) return true;
     const list = KEYS[acao];
     if (!list) return false;
     for (const chave of list) {
@@ -64,6 +83,7 @@ export class Input {
     return false;
   }
   justPressed(acao) {
+    if (this.virtualPressed.has(acao)) return true;
     const list = KEYS[acao];
     if (!list) return false;
     for (const chave of list) {

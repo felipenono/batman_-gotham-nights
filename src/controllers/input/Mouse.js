@@ -15,6 +15,7 @@ export class Mouse {
     this.justClicked = false;
     this._clickedBuffer = false;
     this.hasMoved = false;
+    this.touchIdentifier = null;
     this._onMouseMove = this._onMouseMove.bind(this);
     this._onMouseDown = this._onMouseDown.bind(this);
     this._onMouseUp = this._onMouseUp.bind(this);
@@ -44,6 +45,7 @@ export class Mouse {
     this.y = point.y;
   }
   _onMouseMove(eventoRecebido) {
+    if (eventoRecebido.target?.closest?.("[data-mobile-controls]")) return;
     this.hasMoved = true;
     this._updateCoordinates(eventoRecebido.clientX, eventoRecebido.clientY);
   }
@@ -63,11 +65,14 @@ export class Mouse {
     this.isDown = false;
     this.justClicked = false;
     this._clickedBuffer = false;
+    this.touchIdentifier = null;
   }
   _onTouchStart(eventoRecebido) {
+    if (eventoRecebido.target && eventoRecebido.target !== this.canvas) return;
     if (this.isDown || eventoRecebido.target?.closest?.("button")) return;
     if (eventoRecebido.touches && eventoRecebido.touches.length > 0) {
-      const fracao = eventoRecebido.touches[0];
+      const fracao = (eventoRecebido.changedTouches ?? eventoRecebido.touches)[0];
+      this.touchIdentifier = fracao.identifier ?? null;
       this.hasMoved = true;
       this._updateCoordinates(fracao.clientX, fracao.clientY);
       this.isDown = true;
@@ -75,13 +80,18 @@ export class Mouse {
     }
   }
   _onTouchMove(eventoRecebido) {
+    if (eventoRecebido.target && eventoRecebido.target !== this.canvas) return;
     if (eventoRecebido.touches && eventoRecebido.touches.length > 0) {
-      const fracao = eventoRecebido.touches[0];
+      const fracao = [...eventoRecebido.touches].find(touch => this.touchIdentifier === null || touch.identifier === this.touchIdentifier);
+      if (!fracao) return;
       this.hasMoved = true;
       this._updateCoordinates(fracao.clientX, fracao.clientY);
     }
   }
   _onTouchEnd(eventoRecebido) {
+    if (eventoRecebido.target && eventoRecebido.target !== this.canvas) return;
+    if (this.touchIdentifier !== null && [...(eventoRecebido.touches ?? [])].some(touch => touch.identifier === this.touchIdentifier)) return;
+    this.touchIdentifier = null;
     this.isDown = false;
   }
   _onContextMenu(eventoRecebido) {

@@ -14,7 +14,7 @@ export function criarResultadoHTML(result, dados, profile, botoes, volume, resum
         ${logoMarkup(labels.logo)}
         <h1 class="result-title" tabindex="-1">${escapeHTML(profile.title)}</h1>
         <div class="result-divider" aria-hidden="true"><span>◆</span></div>
-        <dl class="result-stats">${stat(labels.score, number(dados.score), dados.score)}${stat(labels.bestScore, number(dados.bestScore), dados.bestScore)}${stat(LOBBY.scoring.labels.time, formatPlayTime(dados.elapsedSeconds))}</dl>
+        <dl class="result-stats">${stat(labels.score, number(dados.score), dados.score)}${stat(labels.bestScore, number(dados.bestScore), dados.bestScore)}${stat(LOBBY.scoring.labels.totalTime, formatPlayTime(dados.totalElapsedSeconds ?? dados.elapsedSeconds))}</dl>
         <p class="result-record" ${dados.newRecord ? "" : "hidden"}>${escapeHTML(LOBBY.scoring.labels.record)}</p>
         ${resumo}
         <p class="result-demo" ${dados.demo ? "" : "hidden"}>${escapeHTML(labels.demo)}</p>

@@ -51,6 +51,7 @@ export function normalizeResultData(dados = {}) {
     score: inteiroOuPadrao(dados.score, exemplo.score),
     bestScore: inteiroOuPadrao(dados.bestScore, exemplo.bestScore),
     elapsedSeconds: inteiroOuPadrao(dados.elapsedSeconds, exemplo.elapsedSeconds),
+    totalElapsedSeconds: inteiroOuPadrao(dados.totalElapsedSeconds, inteiroOuPadrao(dados.elapsedSeconds, exemplo.elapsedSeconds)),
     levelIndex: Math.max(1, inteiroOuPadrao(dados.levelIndex, exemplo.levelIndex)),
     demo: dados.demo ?? !dadosCompletos,
     ...copiarPontuacao(dados),

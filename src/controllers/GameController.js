@@ -1,6 +1,7 @@
 import { GameModel } from '../models/GameModel.js';
 import { GameView } from '../views/GameView.js';
 import { PlayerController } from './input/PlayerController.js';
+import { TouchControls } from './input/TouchControls.js';
 // Este arquivo cuida de coordenar a partida e seus sistemas.
 
 // ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
@@ -53,6 +54,7 @@ export class GameController {
     this.deathEffects = [];
     this.screenUI = new ScreenController(this, globalThis.document?.getElementById("screen-ui"));
     this.sceneManager = new SceneController(this);
+    this.touchControls = new TouchControls(this);
     this.currentLevel = null;
     this.menuAnimTime = 0;
     this.gameOverCooldown = 0;
@@ -102,6 +104,7 @@ export class GameController {
     this.executando = true;
     this.lastTime = performance.now();
     this.screenUI.update();
+    this.touchControls.update();
     this.quadroAgendado = requestAnimationFrame(this._loop);
   }
   restartGame(levelIndex = 1) {
@@ -145,19 +148,24 @@ export class GameController {
     this.input._onBlur();
     this.mouse._onBlur();
     this.screenUI.update();
+    this.touchControls.update();
   }
   initLevel(levelIndex = 1) {
     this.currentLevel = this.levelManager.loadLevel(levelIndex);
     this.view.setLevel(this.currentLevel);
     this.scoreManager.iniciarFase(levelIndex);
     this.camera.setBounds(this.currentLevel.width, this.currentLevel.height);
+    const existingPlayer = Boolean(this.player);
     if (!this.player) {
       this.player = new Batman(this.currentLevel.spawnPoint);
-    } else {
-      this.player.spawnPoint = { ...this.currentLevel.spawnPoint };
-      this.player.resetFull();
     }
+    const spawn = this.currentLevel.centerSpawn(this.player.w, this.player.h, this.width, this.height);
+    this.player.spawnPoint = { ...spawn };
+    if (existingPlayer) this.player.resetFull();
+    else { this.player.x = spawn.x; this.player.y = spawn.y; }
+    this.player.onGround = true;
     this.camera.follow(this.player);
+    Object.assign(this.camera, { x: 0, y: 0, shakeIntensity: 0, shakeDuration: 0, shakeTimer: 0, shakeOffsetX: 0, shakeOffsetY: 0 });
     this.enemies = [];
     this.projectiles = [];
     this.bossManager.reset();
@@ -173,10 +181,12 @@ export class GameController {
       this.accumulatedTime -= this.fixedStep;
     }
     this.screenUI.update();
+    this.touchControls.update();
     this._render();
     this.quadroAgendado = requestAnimationFrame(this._loop);
   }
   _update(passoTempo) {
+    this.touchControls.update();
     this.input.update();
     this.mouse.update(this.camera.renderX, this.camera.renderY);
     this.menuAnimTime += passoTempo * 0.05;
@@ -351,6 +361,7 @@ export class GameController {
     this.screenUI.end.audio.destroy();
     this.screenUI.end.backgrounds.clear();
     this.screenUI.root?.replaceChildren();
+    this.touchControls.destroy();
     this.input.destroy();
     this.mouse.destroy();
     this.soundManager.destroy();

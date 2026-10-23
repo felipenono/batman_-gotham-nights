@@ -32,26 +32,11 @@ export const LOBBY = {
   scoring: {
     mob: 100,
     boss: 500,
-    mobTypes: {},
-    bossTypes: {},
-    timeBonuses: [
-      {
-        seconds: 90,
-        points: 1000
-      },
-      {
-        seconds: 180,
-        points: 500
-      },
-      {
-        seconds: 300,
-        points: 250
-      },
-      {
-        seconds: Infinity,
-        points: 100
-      }
-    ],
+    mobTypes: { Joker: 100, ScarecrowAcolyte: 150, Penguin: 200, HarleyThug: 175, TwoFaceEnforcer: 225, PenguinElite: 250 },
+    bossTypes: { JokerBoss: 750, Scarecrow: 1000, HarleyQuinn: 1250, TwoFace: 1500 },
+    levelMultipliers: [1, 1.5, 2],
+    combo: { seconds: 6, step: 0.25, max: 2 },
+    timeBonus: { max: 1500, min: 100, decayPerSecond: 4 },
     storageKey: "gotham-nights.best-score.v1",
     countDuration: 1400,
     pulseDuration: 300,
@@ -66,6 +51,7 @@ export const LOBBY = {
     labels: {
       score: "PONTOS",
       time: "TEMPO DA FASE",
+      totalTime: "TEMPO TOTAL DE JOGO",
       mobs: "MOBS DERROTADOS",
       bosses: "CHEFÕES DERROTADOS",
       bonus: "BÔNUS DE TEMPO",
@@ -423,8 +409,9 @@ export const GAME = {
 export const PROJECTILE = {
   BATARANG_SPEED: 10,
   BATARANG_DAMAGE: 10,
-  BATARANG_COOLDOWN: 30,
-  BATARANG_MAX_ACTIVE: 5,
+  BATARANG_COOLDOWN: 6,
+  BATARANG_RELOAD: 60,
+  BATARANG_CAPACITY: 5,
   BULLET_SPEED: 8,
   TEETH_SPEED: 6,
   SMOKE_SPEED: 1.5,
@@ -441,6 +428,7 @@ export const PROJECTILE = {
 export const LEVELS = {
   LEVEL_1: {
     id: 1,
+    difficulty: 1,
     name: "TELHADOS DE GOTHAM",
     subtitle: "Anoitecer em Gotham",
     commonEnemy: "Joker",
@@ -452,7 +440,8 @@ export const LEVELS = {
   },
   LEVEL_2: {
     id: 2,
-    // Nome exibido no HUD, na transição de fase e no letreiro do cenário.
+    difficulty: 1.5,
+    // Nome exibido no HUD, na transição de fase e no cenário.
     name: "ICEBERG LOUNGE",
     subtitle: "O clube de apostas de Cobblepot",
     commonEnemy: "Penguin",
@@ -463,6 +452,7 @@ export const LEVELS = {
   },
   LEVEL_3: {
     id: 3,
+    difficulty: 2.25,
     name: "ASILO ARKHAM",
     subtitle: "Contenção de segurança máxima",
     commonEnemy: "Penguin",
@@ -589,7 +579,6 @@ export const CENARIOS = {
       garrafas: ["#5fb3c9", "#c9a14a", "#8fc9e8", "#6d2b3d", "#3e6f5a", "#d9e6ef"]
     },
     // zumbido: quanto o neon oscila; velocidadeFalha: frequência das falhas curtas (0 desliga).
-    letreiro: { zumbido: 0.06, velocidadeFalha: 0.013 },
     lustres: { brilho: 0.5, cintilas: 6 },
     vitrines: { guardaChuvas: ["#2b2140", "#121418", "#4a1d2a"] },
     nevoa: { velocidade: 0.15, opacidade: 0.06 },

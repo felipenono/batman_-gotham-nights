@@ -14,7 +14,7 @@ export class HUD {
     drawBatarang(contexto, posicaoX, posicaoY, 0.7, active);
   }
   // Recebe o contexto 2D e desenha o estado atual sem avançar o tempo.
-  static draw(contexto, jogador, levelConfig, killsInLevel = 0, chefe = null, largura = 900, altura = 500, isMuted = false, batarangsAvailable = PROJECTILE.BATARANG_MAX_ACTIVE, score = null) {
+  static draw(contexto, jogador, levelConfig, killsInLevel = 0, chefe = null, largura = 900, altura = 500, isMuted = false, batarangsAvailable = PROJECTILE.BATARANG_CAPACITY, score = null) {
     if (!jogador) return;
     contexto.save();
     contexto.fillStyle = estiloVisual.preenchimento1;
@@ -49,9 +49,13 @@ export class HUD {
     }
     contexto.fillStyle = batarangsAvailable > 0 ? estiloVisual.gradiente8 : estiloVisual.preenchimento2;
     contexto.font = estiloVisual.fonte2;
-    contexto.fillText(`BATARANGUES: ${batarangsAvailable}/${PROJECTILE.BATARANG_MAX_ACTIVE}`, 22, 62);
+    contexto.fillText(`BATARANGUES: ${batarangsAvailable}/${PROJECTILE.BATARANG_CAPACITY}`, 22, 62);
     contexto.fillStyle = estiloVisual.preenchimento10;
-    contexto.fillText(jogador.shootCooldown > 0 ? "RECARGA: " + (jogador.shootCooldown / 60).toFixed(1).replace(".", ",") + " s" : batarangsAvailable > 0 ? "PRONTO PARA LANÇAR" : "LIMITE ATINGIDO", 22, 79);
+    const remaining = (jogador.batarangReloadTimer / 60).toFixed(1).replace(".", ",");
+    const status = batarangsAvailable === 0 ? "RECARREGANDO: " + remaining + " s"
+      : jogador.shootCooldown > 0 ? "INTERVALO: " + (jogador.shootCooldown / 60).toFixed(1).replace(".", ",") + " s"
+      : jogador.batarangReloadTimer > 0 ? "RECARGA TOTAL: " + remaining + " s" : "PRONTO PARA LANÇAR";
+    contexto.fillText(status, 22, 79);
   }
   static desenharFase(contexto, levelConfig, killsInLevel, largura) {
     contexto.textAlign = "right";
@@ -126,7 +130,7 @@ export class HUD {
       contexto.textAlign = "right";
       contexto.fillStyle = configuracao.colors.muted;
       contexto.font = `10px ${configuracao.font}`;
-      contexto.fillText(`${configuracao.labels.time}  ${formatPlayTime(score.elapsedSeconds)}`, largura - 24, 128);
+      contexto.fillText(`${configuracao.labels.time}  ${formatPlayTime(score.elapsedSeconds)}${score.comboMultiplier > 1 ? ` · COMBO ${score.comboMultiplier.toLocaleString("pt-BR")}×` : ""}`, largura - 24, 128);
       contexto.fillText(configuracao.labels.pauseHint, largura - 24, 144);
       contexto.save();
       contexto.translate(largura - 24, 111);

@@ -62,16 +62,28 @@ export class EndGameView {
     if (!state.data.scoring) return "";
     const labels = LOBBY.scoring.labels;
     const row = (label, detail, valor) => `<div><dt>${escapeHTML(label)}<small>${escapeHTML(detail)}</small></dt><dd data-count="${valor}">${valor.toLocaleString("pt-BR")}</dd></div>`;
-    const detail = (category) => {
-      const groups = new Map();
-      for (const entry of state.data.breakdown.filter((item) => item.category === category)) groups.set(entry.unitPoints, (groups.get(entry.unitPoints) ?? 0) + entry.count);
-      return [...groups].map(([points, count]) => `${count} × ${points.toLocaleString("pt-BR")}`).join(" + ") || "0";
+    const names = {
+      Joker: "Coringa", ScarecrowAcolyte: "Acólito do medo", Penguin: "Pinguim",
+      HarleyThug: "Capanga da Arlequina", TwoFaceEnforcer: "Agente do Duas-Caras",
+      PenguinElite: "Pinguim de contenção", JokerBoss: "Coringa", Scarecrow: "Espantalho",
+      HarleyQuinn: "Arlequina", TwoFace: "Duas-Caras"
     };
-    let rows = row(labels.mobs, detail("mob"), state.data.mobPoints) + row(labels.bosses, detail("boss"), state.data.bossPoints);
-    if (state.result === "victory") rows += row(labels.bonus, "", state.data.timeBonus);
+    const group = (category, title, total) => {
+      const enemies = new Map();
+      for (const entry of state.data.breakdown.filter(item => item.category === category)) {
+        const enemy = enemies.get(entry.type) ?? { count: 0, points: 0 };
+        enemy.count += entry.count;
+        enemy.points += entry.points;
+        enemies.set(entry.type, enemy);
+      }
+      const lines = [...enemies].map(([type, enemy]) => row(names[type] ?? type, enemy.count + (enemy.count === 1 ? " derrotado" : " derrotados"), enemy.points)).join("");
+      return `<section class="result-breakdown-group"><h2>${escapeHTML(title)}<span data-count="${total}">${total.toLocaleString("pt-BR")}</span></h2><dl class="result-enemy-list">${lines || '<div><dt>Nenhum derrotado</dt><dd>0</dd></div>'}</dl></section>`;
+    };
+    let rows = group("mob", labels.mobs, state.data.mobPoints) + group("boss", labels.bosses, state.data.bossPoints);
+    if (state.result === "victory") rows += `<dl class="result-breakdown-bonus">${row(labels.bonus, "", state.data.timeBonus)}</dl>`;
     const previous = Math.max(0, state.data.bonusTotal - state.data.timeBonus);
-    if (previous) rows += row(labels.previousBonus, "", previous);
-    return `<dl class="result-breakdown">${rows}</dl>`;
+    if (previous) rows += `<dl class="result-breakdown-bonus">${row(labels.previousBonus, "", previous)}</dl>`;
+    return `<section class="result-breakdown">${rows}</section>`;
 
   }
   updateCounters(state) {

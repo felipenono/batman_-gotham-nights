@@ -48,3 +48,21 @@ for (const [nome, arte] of Object.entries(SPRITE_ART)) {
     arte.paint.call(poseDeTeste, contexto);
   }));
 }
+
+test('cassino centraliza os losangos na altura e distribui margens iguais',()=>{
+ for(const [w,h] of [[150,18],[240,24],[1100,60]]){
+  const {contexto,operacoes}=criarRegistroCanvas();
+  new EntityRenderer().draw(contexto,new Platform({x:75,y:200,w,h,theme:'casino'}));
+  const tops=operacoes.filter(op=>op[0]==='moveTo');
+  const centers=operacoes.filter(op=>op[0]==='lineTo').filter((_,index)=>index%3===0);
+  assert.ok(tops.length>0);
+  assert.ok(Math.abs((tops[0][1]-75)-(75+w-tops.at(-1)[1]))<1e-9);
+  for(const center of centers)assert.equal(center[2],200+(h+1)/2);
+ }
+});
+
+test('fase 2 nao desenha mais a placa nem o texto do letreiro',()=>{
+ const {contexto,operacoes}=criarRegistroCanvas();new Level2Background(1100,500).draw(contexto);
+ assert.ok(!operacoes.some(op=>op[0]==='fillText'&&String(op[1]).includes('ICEBERG')));
+ assert.ok(!operacoes.some(op=>op[0]==='fillRect'&&op[1]===410&&op[2]===30&&op[3]===280&&op[4]===40));
+});

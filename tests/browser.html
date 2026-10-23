@@ -89,21 +89,21 @@ document.querySelector('#verify').onclick=()=>{
     scene(1);
     let throws=0;game.playSound=type=>{if(type==='throw')throws++;};
     mouse('mousedown');game._update(1);
-    for(let i=0;i<200;i++)game._update(1);
-    check(throws===1,'segurar mouse por 200 atualizações gera somente um disparo');
-    mouse('mouseup');mouse('mousedown');game._update(1);mouse('mouseup');
-    check(throws===2,'novo clique gera novo disparo');
+    for(let i=0;i<108;i++)game._update(1);
+    check(throws===10,'segurar o mouse dispara duas cargas de cinco com intervalo de 0,1 s e recarga de 1 s');
+    mouse('mouseup');for(let i=0;i<60;i++)game._update(1);
+    check(throws===10&&game.player.batarangsRemaining===5,'soltar o mouse interrompe tiros e restaura toda a carga');
+    mouse('mousedown');game._update(1);mouse('mouseup');check(throws===11,'um clique dispara apenas uma vez');
     scene(1);throws=0;key('keydown');game._update(1);
     for(let i=0;i<200;i++){key('keydown',true);game._update(1);}
-    check(throws===1,'segurar X com repetição automática gera somente um disparo');key('keyup');
+    check(throws===1,'teclado permanece com um tiro por pressionamento');key('keyup');
     scene(1);throws=0;
-    game.projectiles=Array.from({length:5},()=>new Batarang(500,100,0,0));
+    game.player.batarangsRemaining=0;game.player.batarangReloadTimer=60;
     mouse('mousedown');game._update(1);mouse('mouseup');
-    check(throws===0&&Batarang.available(game.projectiles)===0,'limite de cinco bloqueia novo disparo');
-    game.projectiles[0].alive=false;
-    for(let i=0;i<20;i++)game._update(1);
-    check(throws===0&&Batarang.available(game.projectiles)===1,'vaga liberada sem disparo acumulado');
-    mouse('mousedown');game._update(1);mouse('mouseup');check(throws===1,'novo clique usa a vaga liberada');
+    check(throws===0,'sem municao nao dispara');
+    for(let i=0;i<59;i++)game._update(1);
+    check(throws===0&&game.player.batarangsRemaining===5,'recarga completa apos um segundo sem acumular cliques');
+    mouse('mousedown');game._update(1);mouse('mouseup');check(throws===1,'novo clique usa a carga completa');
     for(const phase of [1,2,3]) {
       scene(phase);game.player.x=450;game.player.y=30;
       for(let i=0;i<200;i++)game._update(1);

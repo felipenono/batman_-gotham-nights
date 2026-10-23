@@ -6,10 +6,11 @@ const estiloVisual = APARENCIA.CombatSystem;
 // ===== COMPORTAMENTO =====
 export class CombatSystem {
   // Recebe as dependências e prepara o estado inicial deste componente.
-  constructor({ camera: cameraDoJogo = null, onSound = null, onEnemyDamaged = null } = {}) {
+  constructor({ camera: cameraDoJogo = null, onSound = null, onEnemyDamaged = null, onPlayerDamaged = null } = {}) {
     this.camera = cameraDoJogo;
     this.onSound = onSound;
     this.onEnemyDamaged = onEnemyDamaged;
+    this.playerDamageCallback = onPlayerDamaged;
     this.particles = [];
     this.redFlashAlpha = 0;
   }
@@ -136,6 +137,7 @@ export class CombatSystem {
     }
   }
   onPlayerDamaged() {
+    this.playerDamageCallback?.();
     this.redFlashAlpha = 0.45;
     if (this.onSound) {
       this.onSound("batman_hit");

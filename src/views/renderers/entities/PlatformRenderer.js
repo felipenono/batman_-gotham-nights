@@ -106,12 +106,17 @@ export function desenharCassino(contexto) {
     contexto.fillRect(this.x, this.y, this.w, 4);
     contexto.fillRect(this.x, this.y + this.h - 3, this.w, 3);
     contexto.fillStyle = estiloVisual.preenchimento19;
-    for (let px = this.x + 20; px < this.x + this.w - 20; px += 40) {
+    const count = Math.max(1, Math.floor(this.w / 40));
+    const spacing = this.w / count;
+    const centerY = this.y + (4 + this.h - 3) / 2;
+    const radiusY = Math.min(5, (this.h - 9) / 2);
+    for (let index = 0; index < count; index++) {
+      const px = this.x + spacing * (index + 0.5);
       contexto.beginPath();
-      contexto.moveTo(px, this.y + 6);
-      contexto.lineTo(px + 4, this.y + 11);
-      contexto.lineTo(px, this.y + 16);
-      contexto.lineTo(px - 4, this.y + 11);
+      contexto.moveTo(px, centerY - radiusY);
+      contexto.lineTo(px + 4, centerY);
+      contexto.lineTo(px, centerY + radiusY);
+      contexto.lineTo(px - 4, centerY);
       contexto.closePath();
       contexto.fill();
     }

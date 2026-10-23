@@ -30,11 +30,12 @@ export class PlayerController {
       player.onGround = false;
     }
     // Etapa 4: Disparo do Batarang (Único ataque do Batman)
-    const isMouseFiring = mouse.justClicked;
+    const isMouseFiring = mouse.justClicked || mouse.isDown;
     const isKeyFiring = input.justPressed("SHOOT");
-    const wantsToShoot = isMouseFiring || isKeyFiring;
+    const isTouchFiring = input.isVirtualDown("SHOOT") || input.virtualPressed.has("SHOOT");
+    const wantsToShoot = isMouseFiring || isKeyFiring || isTouchFiring;
     if (wantsToShoot && player.shootCooldown <= 0) {
-      player.throwBatarang(mouse, isMouseFiring, projectilesOut, createBatarang);
+      player.throwBatarang(isTouchFiring ? { hasMoved: false } : mouse, isMouseFiring, projectilesOut, createBatarang);
     }
 
   }

@@ -33,6 +33,7 @@ export class BossManager {
   }
   spawnBoss(levelConfig, worldWidth = 900, worldHeight = 500) {
     if (this.bossSpawned) return;
+    this.attackRate = levelConfig.difficulty ?? 1;
     this.bossTypes = levelConfig.bosses || [levelConfig.boss];
     this.bossIndex = 0;
     this.worldWidth = worldWidth;
@@ -51,6 +52,7 @@ export class BossManager {
       x: this.worldWidth - 140,
       y: this.worldHeight - 170
     });
+    this.boss.attackRate = this.attackRate;
     this.bossSpawned = true;
     this.bossDefeated = false;
     this.deathTimer = GAME.DEATH_ANIMATION_FRAMES;

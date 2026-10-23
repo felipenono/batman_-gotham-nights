@@ -35,7 +35,6 @@ export class PenguinBomb extends UmbrellaBurst {
       this.detonate();
       return;
     }
-    if (mundo?.platforms?.some((elemento) => elemento.alive && this.intersects(elemento))) this.detonate();
     if (this.target?.alive && !this.target.intangible && this.intersects(this.target)) this.detonate();
   }
   detonate() {

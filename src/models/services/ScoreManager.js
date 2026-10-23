@@ -51,6 +51,7 @@ export class ScoreManager {
     this.bonusTotal = 0;
     this.timeBonus = 0;
     this.elapsedSeconds = 0;
+    this.totalElapsedSeconds = 0;
     this.levelIndex = 1;
     this.running = false;
     this.paused = false;
@@ -60,10 +61,13 @@ export class ScoreManager {
     this.recordAtStart = this.bestScore;
     this.players = [0, 0];
     this.entries = new Map();
+    this.comboCount = 0;
+    this.lastKillTime = -Infinity;
   }
   // Inicia o relógio da fase, mantendo os pontos das fases anteriores.
   iniciarFase(numeroDaFase = 1) {
     this.levelIndex = numeroDaFase;
+    this.registrarDano();
     this.elapsedSeconds = 0;
     this.timeBonus = 0;
     this.running = true;
@@ -81,12 +85,26 @@ export class ScoreManager {
     if (!this.running || this.paused) return;
     if (!Number.isFinite(segundos) || segundos <= 0) return;
     this.elapsedSeconds += segundos;
+    this.totalElapsedSeconds += segundos;
+    if (this.elapsedSeconds - this.lastKillTime > (this.config.combo?.seconds ?? 0)) this.comboCount = 0;
     this.pulse = Math.max(0, this.pulse - segundos * 1000);
   }
   // ===== PONTOS POR ABATE =====
-  // Ponto de extensão: no futuro, o contexto permitirá aplicar combos ou itens.
+  get comboMultiplier() {
+    const combo = this.config.combo;
+    if (!combo || this.comboCount < 1) return 1;
+    return Math.min(combo.max, 1 + (this.comboCount - 1) * combo.step);
+  }
+  registrarDano() {
+    this.comboCount = 0;
+    this.lastKillTime = -Infinity;
+  }
   aplicarModificadores(pontos, contexto) {
-    return pontos;
+    const combo = this.config.combo;
+    this.comboCount = combo && this.elapsedSeconds - this.lastKillTime <= combo.seconds ? this.comboCount + 1 : 1;
+    this.lastKillTime = this.elapsedSeconds;
+    const phaseMultiplier = this.config.levelMultipliers?.[this.levelIndex - 1] ?? 1;
+    return pontos * phaseMultiplier * this.comboMultiplier;
   }
   // Recebe um evento de morte e devolve os pontos concedidos, sem conhecer o inimigo.
   adicionar(categoria, tipo, indiceDoJogador = 0) {
@@ -146,20 +164,13 @@ export class ScoreManager {
     }
   }
   // ===== CONCLUSÃO E DADOS PARA A INTERFACE =====
-  // Recebe segundos e escolhe a menor faixa que inclui esse tempo, mesmo fora de ordem.
+  // Bonus continuo: cada segundo ativo conta, sem saltos entre faixas.
   calcularBonusTempo(segundos = this.elapsedSeconds) {
-    let tempo = Infinity;
-    if (Number.isFinite(segundos)) {
-      tempo = Math.max(0, Math.round(segundos * 1000000) / 1000000);
-    }
-    let faixaEscolhida = null;
-    for (const faixa of this.config.timeBonuses) {
-      if (tempo > faixa.seconds) continue;
-      if (faixaEscolhida === null || faixa.seconds < faixaEscolhida.seconds) {
-        faixaEscolhida = faixa;
-      }
-    }
-    return converterParaInteiroPositivo(faixaEscolhida?.points);
+    const bonus = this.config.timeBonus;
+    if (!Number.isFinite(segundos)) return bonus.min;
+    const tempo = Math.max(0, Math.round(segundos * 1000000) / 1000000);
+    const phaseMultiplier = this.config.levelMultipliers?.[this.levelIndex - 1] ?? 1;
+    return converterParaInteiroPositivo(Math.max(bonus.min, bonus.max - tempo * bonus.decayPerSecond) * phaseMultiplier);
   }
   // Encerra uma fase vencida. Chamadas repetidas não concedem bônus novamente.
   finalizarFase() {
@@ -183,6 +194,7 @@ export class ScoreManager {
       score: this.score,
       bestScore: this.bestScore,
       elapsedSeconds: this.elapsedSeconds,
+      totalElapsedSeconds: this.totalElapsedSeconds,
       levelIndex: this.levelIndex,
       mobs: this.mobs,
       bosses: this.bosses,

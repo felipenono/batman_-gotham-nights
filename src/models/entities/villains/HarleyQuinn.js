@@ -58,12 +58,12 @@ export class HarleyQuinn extends Character {
       this.cartwheelAngle = 0;
       return;
     }
-    this.bulletCooldown--;
+    this.bulletCooldown -= this.attackRate ?? 1;
     if (this.bulletCooldown <= 0) {
       this.bulletCooldown = 60 + Math.floor(Math.random() * 30);
       this.shootGuns(jogador, projectilesOut, playSfx);
     }
-    this.malletCooldown--;
+    this.malletCooldown -= this.attackRate ?? 1;
     if (this.malletCooldown <= 0) {
       this.malletCooldown = 180 + Math.floor(Math.random() * 60);
       this.throwMallet(jogador, projectilesOut, playSfx);
@@ -78,26 +78,25 @@ export class HarleyQuinn extends Character {
     const originX = this.x + this.w / 2 + this.facing * 18;
     const originY = this.y + 26;
     const isEnraged = this.hpRatio < 0.5;
-    if (isEnraged) {
-      projectilesOut.push(new Bullet(originX, originY, this.facing * 8, -1.8));
-      projectilesOut.push(new Bullet(originX, originY, this.facing * 8, 0));
-      projectilesOut.push(new Bullet(originX, originY, this.facing * 8, 1.8));
-    } else {
-      projectilesOut.push(new Bullet(originX, originY, this.facing * 8.5, 0));
+    const angle = Math.atan2(jogador.y + jogador.h / 2 - (originY + 4), jogador.x + jogador.w / 2 - (originX + 8));
+    const speed = isEnraged ? 8 : 8.5;
+    for (const offset of isEnraged ? [-0.18, 0, 0.18] : [0]) {
+      projectilesOut.push(new Bullet(originX, originY, Math.cos(angle + offset) * speed, Math.sin(angle + offset) * speed));
     }
   }
   throwMallet(jogador, projectilesOut, playSfx = null) {
     this.attackTimer = 22;
     this.isAttacking = true;
-    if (typeof playSfx === "function") {
-      playSfx("throw");
-    }
+    if (typeof playSfx === "function") playSfx("throw");
     const originX = this.x + this.w / 2 + this.facing * 20;
     const originY = this.y + 20;
-    const dx = jogador.x - originX;
-    const velocidadeX = Math.sign(dx) * 7;
-    const velocidadeY = -5;
-    projectilesOut.push(new Mallet(originX, originY, velocidadeX, velocidadeY));
+    const dx = jogador.x + jogador.w / 2 - (originX + 14);
+    const dy = jogador.y + jogador.h / 2 - (originY + 14);
+    const flightTime = Math.max(12, Math.min(60, Math.round(Math.abs(dx) / 7)));
+    // Compensa a gravidade aplicada antes do movimento de cada quadro.
+    const vx = dx / flightTime;
+    const vy = dy / flightTime - 0.16 * (flightTime + 1) / 2;
+    projectilesOut.push(new Mallet(originX, originY, vx, vy));
   }
   // Recebe a atualização atual e avança o estado, sem redesenhar a tela.
   update(passoTempo = 1, mundo = null) {

@@ -28,4 +28,15 @@ export class Level {
     });
   }
 
+  // Usa uma plataforma existente perto do centro da tela inicial.
+  centerSpawn(playerWidth, playerHeight, viewportWidth, viewportHeight) {
+    const centerX = Math.min(this.width, viewportWidth) / 2;
+    const x = centerX - playerWidth / 2;
+    const idealPlatformY = Math.min(this.height, viewportHeight) / 2 + playerHeight / 2;
+    const platforms = this.platforms.filter(platform => platform.alive && platform.x <= x && platform.x + platform.w >= x + playerWidth);
+    const platform = platforms.reduce((nearest, candidate) => !nearest || Math.abs(candidate.y - idealPlatformY) < Math.abs(nearest.y - idealPlatformY) ? candidate : nearest, null);
+    this.spawnPoint = { x, y: (platform?.y ?? this.height - MUNDO.alturaChao) - playerHeight };
+    return this.spawnPoint;
+  }
+
 }
