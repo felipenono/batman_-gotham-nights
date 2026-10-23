@@ -17,6 +17,7 @@ import { CombatSystem } from '../src/models/services/CombatSystem.js';
 import { Spawner } from '../src/models/services/Spawner.js';
 import { HUD } from '../src/views/HUD.js';
 import { GAME, KEYS, LEVELS, PROJECTILE } from '../src/config/constants.js';
+import { CONTROLES_TOQUE } from '../src/config/configuracao.js';
 
 globalThis.window = new EventTarget();
 const canvas = new EventTarget();
@@ -283,6 +284,8 @@ test('um toque curto no pulo virtual e preservado ate o proximo quadro',()=>{
 });
 
 test('toques nos botoes nao movem mira nem interrompem o dedo que mira no canvas',()=>{
+ // Este teste vale para o modo de mirar tocando na tela (CONTROLES_TOQUE.mirarTocandoNaTela).
+ const original=CONTROLES_TOQUE.mirarTocandoNaTela;CONTROLES_TOQUE.mirarTocandoNaTela=true;
  const c=controls();try{
   const virtual={closest:()=>true};c.mouse.x=12;c.mouse.y=34;
   c.mouse._onTouchStart({target:virtual,touches:[{clientX:80,clientY:90}]});assert.equal(c.mouse.isDown,false);
@@ -291,5 +294,5 @@ test('toques nos botoes nao movem mira nem interrompem o dedo que mira no canvas
   assert.deepEqual([c.mouse.x,c.mouse.y],aim);
   c.mouse._onTouchEnd({target:virtual,touches:[touch]});assert.equal(c.mouse.isDown,true);
   c.mouse._onTouchEnd({target:canvas,touches:[]});assert.equal(c.mouse.isDown,false);
- }finally{c.destroy();}
+ }finally{c.destroy();CONTROLES_TOQUE.mirarTocandoNaTela=original;}
 });

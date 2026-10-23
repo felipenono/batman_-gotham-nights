@@ -3,6 +3,7 @@
 import { Character } from "../Character.js";
 import { Bullet } from "../projectiles/Bullet.js";
 import { Coin } from "../projectiles/Coin.js";
+import { GAME } from "../../../config/configuracao.js";
 // ===== COMPORTAMENTO =====
 export class TwoFace extends Character {
   // Recebe as dependências e prepara o estado inicial deste componente.
@@ -37,7 +38,8 @@ export class TwoFace extends Character {
       this.vx = 0;
     }
     if (this.coinFlipping) {
-      this.coinFlipTimer -= this.attackRate ?? 1;
+      // O aviso da moeda não acelera com a fase, para o jogador ter tempo de reagir.
+      this.coinFlipTimer -= GAME.BOSS_TELEGRAPH_FIXED_SPEED ? 1 : (this.attackRate ?? 1);
       if (this.coinFlipTimer <= 0) {
         this.coinFlipping = false;
         this.executeDecidedAttack(jogador, projectilesOut, playSfx);
@@ -60,7 +62,8 @@ export class TwoFace extends Character {
     this.isAttacking = true;
     const originX = this.x + this.w / 2 + this.facing * 20;
     const originY = this.y + 30;
-    const isEnraged = this.hpRatio < 0.5;
+    // "<=" para o Agente (20 de vida) também entrar em fúria com metade da vida.
+    const isEnraged = this.hpRatio <= 0.5;
     const targetX = jogador.x + jogador.w / 2;
     const targetY = jogador.y + jogador.h / 2;
     if (this.nextAttackIsBullets) {

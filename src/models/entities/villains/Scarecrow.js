@@ -1,6 +1,7 @@
 // Este arquivo cuida de controlar o Espantalho e seus ataques de medo.
 // ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
 import { Character } from "../Character.js";
+import { GAME } from "../../../config/configuracao.js";
 import { FearSmoke } from "../projectiles/FearSmoke.js";
 import { GasBomb } from "../projectiles/GasBomb.js";
 // ===== COMPORTAMENTO =====
@@ -23,7 +24,8 @@ export class Scarecrow extends Character {
     this.introVoice = "scarecrow_intro";
     this.smokeCooldown = 110;
     this.bombCooldown = 190;
-    this.auraTimer = 1200;
+    // A primeira aura vem mais cedo (GAME.SCARECROW_FIRST_AURA_FRAMES); as seguintes a cada 1200.
+    this.auraTimer = GAME.SCARECROW_FIRST_AURA_FRAMES ?? 1200;
     // Cinemática de passos e patrulha
     this.floatCycle = 0;
     this.patrolTimer = 90;

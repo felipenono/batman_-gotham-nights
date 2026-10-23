@@ -1,6 +1,7 @@
 // Este arquivo cuida de compartilhar vida, dano e animação entre personagens.
 // ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
 import { Entity } from "./Entity.js";
+import { GAME } from "../../config/configuracao.js";
 import { AnimationState } from '../AnimationState.js';
 // ===== COMPORTAMENTO =====
 export class Character extends Entity {
@@ -32,9 +33,12 @@ export class Character extends Entity {
   takeDamage(amount) {
     if (!this.alive) return false;
     if (this.invulnerable > 0) return false;
+    // Chefão durante a faixa "ATENÇÃO: ... CHEGOU!" (ver GameController.atualizarChefe).
+    if (this.protegidoNaApresentacao) return false;
     // Redução do estado interno de saúde
     this.hp -= amount;
-    this.hurtFlash = 10;
+    // Chefões ficam menos tempo atordoados para continuarem atacando (GAME.BOSS_HURT_STUN_FRAMES).
+    this.hurtFlash = this.isBoss ? GAME.BOSS_HURT_STUN_FRAMES : 10;
     // Regra polimórfica: chefes recebem janela curta de invulnerabilidade
     if (this.isBoss) {
       this.invulnerable = 6;

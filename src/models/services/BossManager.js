@@ -53,6 +53,9 @@ export class BossManager {
       y: this.worldHeight - 170
     });
     this.boss.attackRate = this.attackRate;
+    // Vida extra dos chefões, ajustável em GAME.BOSS_HP_MULTIPLIER.
+    this.boss.maxHp = Math.round(this.boss.maxHp * (GAME.BOSS_HP_MULTIPLIER ?? 1));
+    this.boss.hp = this.boss.maxHp;
     this.bossSpawned = true;
     this.bossDefeated = false;
     this.deathTimer = GAME.DEATH_ANIMATION_FRAMES;

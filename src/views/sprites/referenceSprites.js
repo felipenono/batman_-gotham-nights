@@ -8,6 +8,15 @@ export const REFERENCE_URLS = {
   two_face: new URL("../../assets/sprites/two_face_reference.png", import.meta.url).href,
   harley_quinn: new URL("../../assets/sprites/harley_quinn_reference.png", import.meta.url).href
 };
+// Capangas com visual próprio (originais, inspirados no tema de cada chefe).
+// Ficam numa lista separada dos 6 personagens principais. Qual tipo usa qual visual: CAPANGAS em configuracao.js.
+export const MOB_REFERENCE_URLS = {
+  capanga_palhaco: new URL("../../assets/sprites/capanga_palhaco_reference.png", import.meta.url).href,
+  acolito_saco: new URL("../../assets/sprites/acolito_saco_reference.png", import.meta.url).href,
+  mafioso_chapeu: new URL("../../assets/sprites/mafioso_chapeu_reference.png", import.meta.url).href,
+  capanga_taco: new URL("../../assets/sprites/capanga_taco_reference.png", import.meta.url).href,
+  agente_fedora: new URL("../../assets/sprites/agente_fedora_reference.png", import.meta.url).href
+};
 export const ART_ASSET_URLS = {
   batarang: new URL("../../assets/sprites/batarang_reference.png", import.meta.url).href,
   bat_logo: new URL("../../assets/sprites/bat_logo_reference.png", import.meta.url).href
@@ -96,6 +105,7 @@ export function prepareReferenceSprites() {
   if (!loading) {
     const arquivos = {
       ...REFERENCE_URLS,
+      ...MOB_REFERENCE_URLS,
       ...ART_ASSET_URLS
     };
     const carregamentos = Object.entries(arquivos).map(([chave, caminho]) => {

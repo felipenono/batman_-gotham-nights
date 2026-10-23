@@ -7,7 +7,7 @@ import { TouchControls } from './input/TouchControls.js';
 // ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
 import { SceneController } from "./SceneController.js";
 import { Viewport } from "../views/Viewport.js";
-import { GAME } from "../config/configuracao.js";
+import { GAME, CAPANGAS } from "../config/configuracao.js";
 import { GameState } from "../models/GameState.js";
 import { Input } from "./input/Input.js";
 import { Mouse } from "./input/Mouse.js";
@@ -228,6 +228,7 @@ export class GameController {
     if (this.encerrarSeDerrotado()) return;
     this.atualizarOndas();
     this.atualizarChefe(passoTempo);
+    this.atualizarReforcos(passoTempo);
     this.verificarConclusaoDaFase();
     if (this.sceneManager.transition || this.state !== GameState.PLAYING) return;
     this.atualizarInimigos(passoTempo);
@@ -259,23 +260,58 @@ export class GameController {
   }
   atualizarOndas() {
     const bossIsPresent = this.bossManager.boss && this.bossManager.boss.alive;
-    this.spawner.update(this.enemies, this.currentLevel.width, this.currentLevel.height, bossIsPresent);
+    this.spawner.update(this.enemies, this.currentLevel.width, this.currentLevel.height, bossIsPresent, this.player.x + this.player.w / 2);
     if (this.spawner.thresholdReached && !this.bossManager.bossSpawned) {
       this.bossManager.spawnBoss(this.levelManager.currentLevelConfig, this.currentLevel.width, this.currentLevel.height);
+      if (GAME.BOSS_INTRO_CLEARS_FIELD) this.limparCampoParaOChefe();
+      this.reforcoTimer = CAPANGAS.reforcos.intervalo;
       this.soundManager.setTrack("boss");
       this.camera.shake(12, 20);
       this.playSound("boss_enter");
       this.tocarFalaDoChefe(this.bossManager.boss);
     }
   }
+  // Tira os capangas restantes (com explosão, sem contar pontos) e os ataques inimigos no ar.
+  // Os batarangues do Batman continuam voando.
+  limparCampoParaOChefe() {
+    for (const inimigo of this.enemies) {
+      if (inimigo.alive) this.combat.createDeathExplosion(inimigo.x + inimigo.w / 2, inimigo.y + inimigo.h / 2);
+    }
+    this.enemies = [];
+    this.projectiles = this.projectiles.filter((projetil) => projetil.owner !== "villain");
+  }
+  // Durante a luta (depois da faixa e com o chefe abaixo de CAPANGAS.reforcos.aPartirDaVida),
+  // chega 1 capanga a cada CAPANGAS.reforcos.intervalo quadros, até maximoVivos ao mesmo tempo.
+  atualizarReforcos(passoTempo) {
+    const regras = CAPANGAS.reforcos;
+    const chefe = this.bossManager.boss;
+    if (!regras.ativo || !chefe?.alive || this.bossManager.introTimer > 0) return;
+    if (chefe.hpRatio >= regras.aPartirDaVida) return;
+    if (this.reforcoTimer === undefined) this.reforcoTimer = regras.intervalo;
+    const vivos = this.enemies.filter((inimigo) => inimigo.alive).length;
+    if (vivos >= regras.maximoVivos) return;
+    this.reforcoTimer -= passoTempo;
+    if (this.reforcoTimer > 0) return;
+    this.reforcoTimer = regras.intervalo;
+    this.spawner.spawnReforco(this.enemies, this.currentLevel.width, this.currentLevel.height, this.player.x + this.player.w / 2);
+  }
   atualizarChefe(passoTempo) {
     if (this.bossManager.boss && this.bossManager.boss.alive) {
       const chefe = this.bossManager.boss;
-      chefe.updateAI(this.player, this.projectiles, (fearDuration) => {
-        this.player.applyFear(fearDuration);
-        this.camera.shake(8, 16);
-      }, (sfxType) => this.playSound(sfxType));
+      // Enquanto a faixa de apresentação aparece, o chefão só cai até o chão: não ataca nem anda.
+      const emApresentacao = GAME.BOSS_INTRO_PAUSES_AI && this.bossManager.introTimer > 0;
+      if (emApresentacao) {
+        chefe.vx = 0;
+      } else {
+        chefe.updateAI(this.player, this.projectiles, (fearDuration) => {
+          this.player.applyFear(fearDuration);
+          this.camera.shake(8, 16);
+        }, (sfxType) => this.playSound(sfxType));
+      }
       chefe.update(passoTempo, this.currentLevel);
+      // Também não recebe dano durante a apresentação, para a luta começar igual para os dois lados.
+      // (Usa uma marca própria em vez de "invulnerable" para o chefe não ficar semitransparente.)
+      chefe.protegidoNaApresentacao = emApresentacao;
       this.physics.update(chefe, this.currentLevel.platforms, this.currentLevel.width, this.currentLevel.height, passoTempo);
     }
   }
@@ -297,6 +333,7 @@ export class GameController {
     }, (novoChefe) => {
       this.projectiles = [];
       this.enemies = [];
+      this.reforcoTimer = CAPANGAS.reforcos.intervalo;
       this.camera.shake(8, 12);
       this.playSound("boss_enter");
       this.tocarFalaDoChefe(novoChefe);

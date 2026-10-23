@@ -3,6 +3,7 @@ import { GameState } from '../models/GameState.js';
 import { HUD } from './HUD.js';
 import { LevelView } from './world/LevelView.js';
 import { EntityRenderer } from './renderers/EntityRenderer.js';
+import { definirLuzDosPersonagens } from './sprites/SpriteRenderer.js';
 import { drawCombat } from './renderers/CombatRenderer.js';
 import { drawBossIntro } from './renderers/BossIntroRenderer.js';
 import { drawLevelTransition } from './renderers/LevelTransitionRenderer.js';
@@ -76,6 +77,7 @@ export class GameView {
     this.level.draw(this.ctx, this.camera);
     this.ctx.save();
     this.ctx.translate(-camX, -camY);
+    definirLuzDosPersonagens(this.levelManager.currentLevelConfig?.id);
     for (const effect of this.deathEffects) this.entities.draw(this.ctx, effect.actor);
     for (const enemy of this.enemies) {
       if (enemy.alive) this.entities.draw(this.ctx, enemy);

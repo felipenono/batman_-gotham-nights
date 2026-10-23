@@ -1,5 +1,5 @@
 // Este arquivo cuida de selecionar e reutilizar quadros das animações.
-import { APARENCIA } from "../../config/configuracao.js";
+import { APARENCIA, LUZ_PERSONAGENS } from "../../config/configuracao.js";
 
 // ===== DEPENDÊNCIAS E CONFIGURAÇÕES =====
 import { ANIMACAO } from "../../config/configuracao.js";
@@ -20,14 +20,26 @@ export const SPRITE_ART = {
   two_face
 };
 export const SPRITE_ACTIONS = Object.freeze(ANIMACAO.quadros);
+// Capangas usam a própria imagem, mas o tamanho base e o desenho de reserva (se a imagem
+// não carregar) vêm do chefe do mesmo tema.
+const BASE_DOS_CAPANGAS = {
+  capanga_palhaco: "joker",
+  acolito_saco: "scarecrow",
+  mafioso_chapeu: "penguin",
+  capanga_taco: "harley_quinn",
+  agente_fedora: "two_face"
+};
+function arteDe(chave) {
+  return SPRITE_ART[chave] ?? SPRITE_ART[BASE_DOS_CAPANGAS[chave]];
+}
 export const SPRITE_NAMES = Object.keys(SPRITE_ART).flatMap((name) => Object.keys(SPRITE_ACTIONS).map((acao) => `${name}_${acao}`));
 const cache = new Map();
 const SIZE = ANIMACAO.tamanho, ANCHOR_X = ANIMACAO.ancoraX, ANCHOR_Y = ANIMACAO.ancoraY, RESOLUTION = ANIMACAO.resolucao;
 export function spriteFrame(chave, acao, quadro) {
-  const id = `${chave}_${acao}_${quadro}`;
+  const id = `${chave}_${acao}_${quadro}_${idDaLuz}`;
   if (cache.has(id)) return cache.get(id);
   if (!globalThis.document) return null;
-  const art = SPRITE_ART[chave];
+  const art = arteDe(chave);
   if (!art) return null;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = SIZE * RESOLUTION;
@@ -81,6 +93,7 @@ export function spriteFrame(chave, acao, quadro) {
   const rendered = drawReference(contexto, chave, art.height, phase, acao);
   contexto.restore();
   if (!rendered) art.paint.call(pose, contexto);
+  aplicarLuz(canvas);
   if (cache.size >= ANIMACAO.limiteCache) cache.delete(cache.keys().next().value);
   cache.set(id, canvas);
   return canvas;
@@ -90,14 +103,81 @@ export async function loadSprites() {
   cache.clear();
   for (const chave of Object.keys(SPRITE_ART)) for (const acao of Object.keys(SPRITE_ACTIONS)) spriteFrame(chave, acao, 0);
 }
+// ===== LUZ DA FASE =====
+// A tela informa a fase atual antes de desenhar os personagens (null = sem efeito, como no menu).
+// A luz é aplicada uma única vez em cada quadro guardado (o custo por tela não muda).
+let luzDaFase = null;
+let idDaLuz = "sem-luz";
+export function definirLuzDosPersonagens(idDaFase) {
+  luzDaFase = LUZ_PERSONAGENS.ativo ? LUZ_PERSONAGENS.fases[idDaFase] ?? null : null;
+  idDaLuz = luzDaFase ? `fase${idDaFase}` : "sem-luz";
+}
+// Uma única tela de rascunho, reaproveitada por todos os personagens (não guarda cópias por fase).
+let rascunho = null;
+function telaDeRascunho(largura, altura) {
+  if (!globalThis.document) return null;
+  if (!rascunho) rascunho = document.createElement("canvas");
+  if (rascunho.width !== largura || rascunho.height !== altura) {
+    rascunho.width = largura;
+    rascunho.height = altura;
+  }
+  return rascunho;
+}
+// Pinta a imagem inteira com uma cor, só onde o sprite existe (silhueta ou tom).
+function pintarSobre(imagem, cor, modo) {
+  const tela = telaDeRascunho(imagem.width, imagem.height);
+  if (!tela) return null;
+  const contexto = tela.getContext("2d");
+  contexto.globalCompositeOperation = "source-over";
+  contexto.clearRect(0, 0, tela.width, tela.height);
+  contexto.drawImage(imagem, 0, 0);
+  contexto.globalCompositeOperation = modo;
+  contexto.fillStyle = cor;
+  contexto.fillRect(0, 0, tela.width, tela.height);
+  contexto.globalCompositeOperation = "source-over";
+  return tela;
+}
+// Junta, no próprio quadro: contorno de luz (silhueta clara um pouco acima, atrás do sprite)
+// e o tom da fase por cima do sprite.
+function aplicarLuz(canvas) {
+  if (!luzDaFase) return;
+  const original = document.createElement("canvas");
+  original.width = canvas.width;
+  original.height = canvas.height;
+  original.getContext("2d").drawImage(canvas, 0, 0);
+  const contexto = canvas.getContext("2d");
+  contexto.save();
+  contexto.setTransform(1, 0, 0, 1, 0, 0);
+  contexto.filter = "none";
+  contexto.globalAlpha = 1;
+  contexto.clearRect(0, 0, canvas.width, canvas.height);
+  const deslocamento = Math.round(LUZ_PERSONAGENS.deslocamentoContorno * RESOLUTION);
+  const silhueta = pintarSobre(original, luzDaFase.contorno, "source-in");
+  if (silhueta) contexto.drawImage(silhueta, 0, -deslocamento);
+  const comTom = pintarSobre(original, luzDaFase.tom, "source-atop");
+  contexto.drawImage(comTom ?? original, 0, 0);
+  contexto.restore();
+}
+// Sombra oval sob os pés, apenas com o personagem no chão.
+function desenharSombra(contexto, actor) {
+  const sombra = LUZ_PERSONAGENS.sombra;
+  if (!luzDaFase || !sombra.ativo || !actor.onGround || !actor.alive) return;
+  contexto.save();
+  contexto.fillStyle = sombra.cor;
+  contexto.beginPath();
+  contexto.ellipse(actor.x + actor.w / 2, actor.y + actor.h - 1, actor.w * sombra.largura / 2, sombra.altura / 2, 0, 0, Math.PI * 2);
+  contexto.fill();
+  contexto.restore();
+}
 // ===== COMPORTAMENTO =====
 export class SpriteRenderer {
   draw(contexto, actor) { return paintCharacter.call(actor.animator, contexto, actor); }
 }
 function paintCharacter(contexto, actor) {
-    const art = SPRITE_ART[actor.spriteKey];
+    const art = arteDe(actor.spriteKey);
     if (!art) return;
     const escala = actor.h / art.height;
+    desenharSombra(contexto, actor);
     contexto.save();
     contexto.translate(Math.round(actor.x + actor.w / 2), Math.round(actor.y + actor.h));
     contexto.scale((actor.facing || 1) * escala, escala);

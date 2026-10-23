@@ -61,7 +61,7 @@ test('cada chefe pontua; só o último encerra cronômetro e gera bônus da fase
   const game=makeGame(); try {
     game.restartGame(); game.spawner.update=()=>{};
     game.bossManager.spawnBoss(game.levelManager.currentLevelConfig,game.currentLevel.width,game.height);
-    const kill=()=>{ const boss=game.bossManager.boss; boss.hp=1; boss.updateAI=()=>{}; const shot=new Batarang(0,0,0,0); shot.intersects=target=>target===boss; game.projectiles=[shot]; game._update(1); };
+    const kill=()=>{ game.bossManager.introTimer=0; const boss=game.bossManager.boss; boss.hp=1; boss.updateAI=()=>{}; const shot=new Batarang(0,0,0,0); shot.intersects=target=>target===boss; game.projectiles=[shot]; game._update(1); };
     kill(); assert.equal(game.scoreManager.bosses,1); assert.equal(game.scoreManager.running,true);
     game.bossManager.deathTimer=0; game._update(1); kill();
     assert.equal(game.scoreManager.bosses,2); assert.equal(game.scoreManager.running,false);

@@ -404,7 +404,29 @@ export const GAME = {
   LIVES: 5,
   BATMAN_HP_PER_LIFE: 3,
   RESPAWN_INTANGIBLE_FRAMES: 60,
-  DEATH_ANIMATION_FRAMES: 30
+  DEATH_ANIMATION_FRAMES: 30,
+  // Quadros em que um chefão fica atordoado (sem atacar) a cada batarangue recebido.
+  // Era 10: com a rajada de batarangues, o chefe ficava travado e quase não atacava.
+  // Para voltar ao comportamento antigo, use 10.
+  BOSS_HURT_STUN_FRAMES: 3,
+  // Durante a faixa "ATENÇÃO: ... CHEGOU!" o chefão não ataca e não recebe dano.
+  // Para voltar ao comportamento antigo (chefe já agindo durante o aviso), use false.
+  BOSS_INTRO_PAUSES_AI: true,
+  // Quando o chefão chega, os capangas restantes somem (com explosão, sem pontos) e os
+  // ataques inimigos no ar são apagados. Para manter tudo em campo, use false.
+  BOSS_INTRO_CLEARS_FIELD: true,
+  // O giro da moeda do Duas-Caras (aviso antes do ataque) dura sempre 35 quadros,
+  // mesmo com a dificuldade da fase acelerando os ataques. Com false, o aviso também acelera.
+  BOSS_TELEGRAPH_FIXED_SPEED: true,
+  // Multiplica a vida de todos os chefões (Coringa 120 -> 240, Espantalho 100 -> 200,
+  // Arlequina 120 -> 240, Duas-Caras 150 -> 300).
+  BOSS_HP_MULTIPLIER: 2,
+  // Distância horizontal mínima entre o Batman e o ponto onde um capanga nasce.
+  // Se o lado sorteado ficar perto demais, o capanga nasce do outro lado. Com 0, desliga.
+  SPAWN_SAFE_DISTANCE: 250,
+  // Quadros até a primeira aura do medo do Espantalho (as seguintes continuam a cada 1200).
+  // Era 1200 (20 s): o Espantalho costumava ser derrotado antes de usar a aura.
+  SCARECROW_FIRST_AURA_FRAMES: 420
 };
 export const PROJECTILE = {
   BATARANG_SPEED: 10,
@@ -457,7 +479,8 @@ export const LEVELS = {
     subtitle: "Contenção de segurança máxima",
     commonEnemy: "Penguin",
     boss: "TwoFace",
-    killThreshold: 10,
+    // Era 10: com a dificuldade 2,25 a fase acabava em cerca de 10 s.
+    killThreshold: 15,
     enemyRoster: ["TwoFaceEnforcer", "PenguinElite"],
     background: "Level3Background"
   }
@@ -945,6 +968,48 @@ export const PARTITURAS = {
     130.81,
     138.59
   ]
+};
+// ===== LUZ E SOMBRA DOS PERSONAGENS =====
+// Integra os sprites ao cenário de cada fase: sombra no chão, um tom escuro da cor da fase
+// por cima do sprite e um contorno de luz na borda de cima (luz da lua/teto). Com ativo: false, os
+// personagens voltam a ser desenhados exatamente como antes.
+export const LUZ_PERSONAGENS = {
+  ativo: true,
+  sombra: { ativo: true, cor: "rgba(0, 0, 0, 0.38)", largura: 1.15, altura: 6 },
+  // tom: cor misturada por cima do sprite (escurece e puxa para a cor da fase).
+  // contorno: luz desenhada atrás do sprite, deslocada para cima (deslocamentoContorno, em pixels do jogo).
+  fases: {
+    1: { tom: "rgba(14, 24, 48, 0.18)", contorno: "rgba(165, 189, 223, 0.35)" },
+    2: { tom: "rgba(6, 32, 64, 0.18)", contorno: "rgba(125, 211, 252, 0.4)" },
+    3: { tom: "rgba(6, 26, 16, 0.16)", contorno: "rgba(134, 239, 172, 0.32)" }
+  },
+  deslocamentoContorno: 1
+};
+// ===== CONTROLES DE TOQUE (celular) =====
+// mirarTocandoNaTela: com true, tocar no cenário mira e atira naquele ponto (comportamento antigo).
+// Com false, só o botão ATIRAR atira, na direção em que o Batman está virado.
+export const CONTROLES_TOQUE = {
+  mirarTocandoNaTela: true,
+  // Toques geram um clique de mouse "falso" logo depois; ele é ignorado por este tempo (ms).
+  ignorarCliqueAposToque: 800
+};
+// ===== CAPANGAS =====
+// Visual de cada tipo de capanga (os ataques não mudam). Com ativo: false, voltam a usar
+// a imagem do chefe do mesmo tema, como antes.
+export const CAPANGAS = {
+  ativo: true,
+  visual: {
+    Joker: "capanga_palhaco",
+    ScarecrowAcolyte: "acolito_saco",
+    Penguin: "mafioso_chapeu",
+    PenguinElite: "mafioso_chapeu",
+    HarleyThug: "capanga_taco",
+    TwoFaceEnforcer: "agente_fedora"
+  },
+  // Reforços durante a luta: com o chefe abaixo de "aPartirDaVida" (0.5 = metade da vida),
+  // chega 1 capanga a cada "intervalo" quadros (150 = 2,5 s), com no máximo "maximoVivos" ao mesmo tempo.
+  // Para reforços desde o início da luta, use aPartirDaVida: 1.
+  reforcos: { ativo: true, intervalo: 150, maximoVivos: 3, aPartirDaVida: 1 }
 };
 export const ANIMACAO = {
   tamanho: 256,
